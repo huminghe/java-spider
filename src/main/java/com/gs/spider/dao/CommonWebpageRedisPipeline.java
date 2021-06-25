@@ -14,7 +14,7 @@ import us.codecraft.webmagic.pipeline.Pipeline;
 @Component
 public class CommonWebpageRedisPipeline implements Pipeline {
     private static Jedis jedis;
-	private final boolean needRedis;
+    private final boolean needRedis;
     private final String publishChannelName;
     private final Gson gson = new Gson();
     private Logger LOG = LogManager.getLogger(CommonWebpageRedisPipeline.class);

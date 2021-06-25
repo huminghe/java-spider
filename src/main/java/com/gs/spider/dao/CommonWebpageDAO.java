@@ -51,14 +51,14 @@ import static org.elasticsearch.index.query.QueryBuilders.moreLikeThisQuery;
 @Component
 public class CommonWebpageDAO extends IDAO<Webpage> {
     private final static String INDEX_NAME = "commons", TYPE_NAME = "webpage";
-    
+
     private static final int SCROLL_TIMEOUT = 1;
-    
+
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Date.class, (JsonDeserializer<Date>) (json, typeOfT, context) -> new Date(json.getAsJsonPrimitive().getAsLong()))
             .registerTypeAdapter(Date.class, (JsonSerializer<Date>) (src, typeOfSrc, context) -> new JsonPrimitive(src.getTime()))
             .setDateFormat(DateFormat.LONG).create();
-    
+
     private Logger logger = LogManager.getLogger(CommonWebpageDAO.class);
 
     @Autowired

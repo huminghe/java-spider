@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 
 /**
+ *
  */
 public class ResultListBundle<T> extends ResultBundle<T> {
     /**

@@ -25,14 +25,14 @@ import org.springframework.web.servlet.ModelAndView;
 @RequestMapping("/commons/spiderinfo")
 @RestController
 public class SpiderInfoController {
-	
+
     private final static Logger logger = LogManager.getLogger(SpiderInfoController.class);
-    
+
     @Autowired
     private SpiderInfoService spiderInfoService;
     @Autowired
     private CommonWebpageService commonWebpageService;
-    
+
     private Gson gson = new Gson();
 
     /**
@@ -61,7 +61,7 @@ public class SpiderInfoController {
     public ResultListBundle<SpiderInfo> getByDomain(String domain, @RequestParam(value = "size", required = false, defaultValue = "10") int size, @RequestParam(value = "page", required = false, defaultValue = "1") int page) {
         return spiderInfoService.getByDomain(domain, size, page);
     }
-    
+
     /**
      * 已抓取的网页列表
      *

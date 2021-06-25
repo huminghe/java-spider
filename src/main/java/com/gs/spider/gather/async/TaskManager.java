@@ -31,7 +31,7 @@ public class TaskManager {
     private Logger LOG = LogManager.getLogger(TaskManager.class);
     private Logger TASK_LOG = LogManager.getLogger("TASK_LOG");
     private Map<String, Task> taskMap = new LinkedHashMap<>();
-    
+
     @Autowired
     private HttpClientUtil httpClientUtil;
 
@@ -68,12 +68,12 @@ public class TaskManager {
         TASK_LOG.info("根据任务ID:{},获取任务实体", taskId);
         Task t = taskMap.get(taskId);
         if (t != null && !containsExtraInfo) {
-        	try {
-        		t = ((Task) t.clone());
-        	} catch (CloneNotSupportedException e) {
-        		e.printStackTrace();
-        	}
-        	t.setExtraInfo(null);
+            try {
+                t = ((Task) t.clone());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+            t.setExtraInfo(null);
         }
         return t;
     }
@@ -145,7 +145,7 @@ public class TaskManager {
     public Task initTask(String taskId, String name, List<String> callbackURL, String callbackPara) {
         Task task = new Task(taskId, name, System.currentTimeMillis());
         task.setCallbackURL(callbackURL)
-        	.setCallbackPara(callbackPara + "&taskId=" + taskId);
+                .setCallbackPara(callbackPara + "&taskId=" + taskId);
         task.setDescription("任务名称:" + name + "已初始化");
         taskMap.put(task.getTaskId(), task);
         return task;
@@ -178,8 +178,8 @@ public class TaskManager {
     public void stopTask(String taskId) {
         //完毕更新任务状态信息
         Task task = taskMap.get(taskId);
-        if (task != null){ 
-        	stopTask(task);
+        if (task != null) {
+            stopTask(task);
         }
     }
 
@@ -211,8 +211,8 @@ public class TaskManager {
                     LOG.info("任务线程结束,callBack返回值: " + callBackReturnStr);
                     task.setDescription("HTTP回调完成,URL:%s,返回值:%s", callbackURLWithPara, callBackReturnStr);
                 }
-            }else{
-            		LOG.info("任务线程结束,由于回调地址为空,不进行回调");
+            } else {
+                LOG.info("任务线程结束,由于回调地址为空,不进行回调");
             }
         } catch (Exception e) {
             LOG.error("任务线程完毕调用回调时出错," + e.getLocalizedMessage());

@@ -30,9 +30,9 @@ import java.util.Map;
 @RequestMapping("/commons/webpage")
 @Controller
 public class CommonWebpageController {
-	
+
     private Logger logger = LogManager.getLogger(CommonWebpageController.class);
-    
+
     @Autowired
     private CommonWebpageService webpageService;
 

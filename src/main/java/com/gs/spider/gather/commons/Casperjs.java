@@ -21,10 +21,10 @@ import java.util.Map;
 public class Casperjs {
     private static Logger LOG = LogManager.getLogger(Casperjs.class);
     private static Gson gson = new Gson();
-    
+
     @Autowired
     private HttpClientUtil httpUtils;
-    
+
     @Autowired
     private StaticValue staticValue;
 

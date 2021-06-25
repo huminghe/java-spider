@@ -14,13 +14,13 @@ import com.gs.spider.utils.AppInfo;
 @RequestMapping("/")
 public class HomeController extends BaseController {
 
-	private final static Logger logger = LogManager.getLogger(HomeController.class);
+    private final static Logger logger = LogManager.getLogger(HomeController.class);
 
-	@RequestMapping(value = { "/", "" }, method = RequestMethod.GET)
-	public ModelAndView home() {
-		ModelAndView modelAndView = new ModelAndView("panel/welcome/welcome");
-		modelAndView.addObject("appName", AppInfo.APP_NAME).addObject("appVersion", AppInfo.APP_VERSION)
-				.addObject("onlineDocumentation", AppInfo.ONLINE_DOCUMENTATION);
-		return modelAndView;
-	}
+    @RequestMapping(value = {"/", ""}, method = RequestMethod.GET)
+    public ModelAndView home() {
+        ModelAndView modelAndView = new ModelAndView("panel/welcome/welcome");
+        modelAndView.addObject("appName", AppInfo.APP_NAME).addObject("appVersion", AppInfo.APP_VERSION)
+                .addObject("onlineDocumentation", AppInfo.ONLINE_DOCUMENTATION);
+        return modelAndView;
+    }
 }

@@ -238,14 +238,15 @@ public class CommonWebpageService {
         commonWebpageDAO.exportWebpageJSONByDomain(domain, includeRaw, outputStream);
     }
 
-	/**
-	 * 根据关键词和域名分页查找
-	 * @param query
-	 * @param domain
-	 * @param size
-	 * @param page
-	 * @return
-	 */
+    /**
+     * 根据关键词和域名分页查找
+     *
+     * @param query
+     * @param domain
+     * @param size
+     * @param page
+     * @return
+     */
     public ResultBundle<Pair<List<Webpage>, Long>> getWebPageByKeywordAndDomain(String query, String domain, int size, int page) {
         return bundleBuilder.bundle(query, () -> commonWebpageDAO.getWebpageByKeywordAndDomain(query, domain, size, page));
     }

@@ -37,11 +37,11 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("panel/commons")
 public class CommonsSpiderPanel extends BaseController {
-	
+
     private static final Gson gson = new Gson();
-    
+
     private Logger logger = LogManager.getLogger(CommonsSpiderPanel.class);
-    
+
     @Autowired
     private CommonsSpiderService commonsSpiderService;
     @Autowired

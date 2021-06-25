@@ -61,48 +61,48 @@ public class CommonSpider extends AsyncGather {
     private static List<String> ignoredUrls;
     //尽量先匹配长模板
     private static LinkedList<Pair<String, SimpleDateFormat>> datePattern = Lists.newLinkedList();
-    
-    private static final String HTML_PREFIX = "<!DOCTYPE html>\n" + 
-    		"<html lang=\"en\">\n" + 
-    		"    <head>\n" + 
-    		"        <meta name=\"apple-mobile-web-app-capable\" content=\"yes\"></meta>\n" + 
-    		"        <meta http-equiv=\"Cache-Control\" name=\"no-store\"></meta>\n" + 
-    		"        <meta content=\"telephone=no\" name=\"format-detection\"></meta>\n" + 
-    		"        <meta content=\"email=no\" name=\"format-detection\"></meta>\n" + 
-    		"        <meta charset=\"utf-8\"></meta>\n" + 
-    		"        <meta name=\"viewport\" content=\"target-densitydpi=device-dpi,width=decive-width,initial-scale=1,maximum-scale=1\"></meta>\n" + 
-    		"        <title>FAQ</title>\n" + 
-    		"        <style>\n" + 
-    		"            html,body {\n" + 
-    		"                width: 100%;\n" + 
-    		"                margin: 0;\n" + 
-    		"                padding: 0;\n" + 
-    		"            }\n" + 
-    		"            html, body,* {\n" + 
-    		"                font-family: \"微软雅黑\";\n" + 
-    		"                line-height: 24px;\n" + 
-    		"                font-size: 16px;\n" + 
-    		"            }\n" + 
-    		"            h1 {\n" + 
-    		"                font-size: 24px;\n" + 
-    		"            }\n" + 
-    		"            body {\n" + 
-    		"            }\n" + 
-    		"            .text-center {\n" + 
-    		"                text-align: center;\n" + 
-    		"            }\n" + 
-    		"            ul,li {\n" + 
-    		"                list-style: none;\n" + 
-    		"            }\n" + 
-    		"            ul {\n" + 
-    		"                margin: 0;\n" + 
-    		"                padding: 0 10px;\n" + 
-    		"            }\n" + 
-    		"            img { height: auto; width: auto\\9; width:100%; }\n" + 
-    		"        </style>\n" + 
-    		"    </head>\n" + 
-    		"<body> ";
-    
+
+    private static final String HTML_PREFIX = "<!DOCTYPE html>\n" +
+            "<html lang=\"en\">\n" +
+            "    <head>\n" +
+            "        <meta name=\"apple-mobile-web-app-capable\" content=\"yes\"></meta>\n" +
+            "        <meta http-equiv=\"Cache-Control\" name=\"no-store\"></meta>\n" +
+            "        <meta content=\"telephone=no\" name=\"format-detection\"></meta>\n" +
+            "        <meta content=\"email=no\" name=\"format-detection\"></meta>\n" +
+            "        <meta charset=\"utf-8\"></meta>\n" +
+            "        <meta name=\"viewport\" content=\"target-densitydpi=device-dpi,width=decive-width,initial-scale=1,maximum-scale=1\"></meta>\n" +
+            "        <title>FAQ</title>\n" +
+            "        <style>\n" +
+            "            html,body {\n" +
+            "                width: 100%;\n" +
+            "                margin: 0;\n" +
+            "                padding: 0;\n" +
+            "            }\n" +
+            "            html, body,* {\n" +
+            "                font-family: \"微软雅黑\";\n" +
+            "                line-height: 24px;\n" +
+            "                font-size: 16px;\n" +
+            "            }\n" +
+            "            h1 {\n" +
+            "                font-size: 24px;\n" +
+            "            }\n" +
+            "            body {\n" +
+            "            }\n" +
+            "            .text-center {\n" +
+            "                text-align: center;\n" +
+            "            }\n" +
+            "            ul,li {\n" +
+            "                list-style: none;\n" +
+            "            }\n" +
+            "            ul {\n" +
+            "                margin: 0;\n" +
+            "                padding: 0 10px;\n" +
+            "            }\n" +
+            "            img { height: auto; width: auto\\9; width:100%; }\n" +
+            "        </style>\n" +
+            "    </head>\n" +
+            "<body> ";
+
     private static final String HTML_SUFFIX = " </body></html>";
 
     static {
@@ -152,7 +152,7 @@ public class CommonSpider extends AsyncGather {
     private NLPExtractor summaryExtractor;
     private NLPExtractor namedEntitiesExtractor;
     private StaticValue staticValue;
-    
+
     @SuppressWarnings("unchecked")
     private final PageConsumer spiderInfoPageConsumer = (page, info, task) -> {
         try {
@@ -290,9 +290,9 @@ public class CommonSpider extends AsyncGather {
             for (SpiderInfo.FieldConfig conf : info.getDynamicFields()) {
                 String fieldName = conf.getName();
                 String fieldData = null;
-                if(fieldName.equals("imgs")) {
-                		fieldData = page.getHtml().xpath(conf.getXpath()).all().toString();
-                }else if (!StringUtils.isBlank(conf.getXpath())) {//提取
+                if (fieldName.equals("imgs")) {
+                    fieldData = page.getHtml().xpath(conf.getXpath()).all().toString();
+                } else if (!StringUtils.isBlank(conf.getXpath())) {//提取
                     fieldData = page.getHtml().xpath(conf.getXpath()).get();
                 } else if (!StringUtils.isBlank(conf.getRegex())) {
                     fieldData = page.getHtml().regex(conf.getRegex()).get();
@@ -373,13 +373,13 @@ public class CommonSpider extends AsyncGather {
             ///////////////////////////////////////////////////////
             if (info.isDoNLP()) {//判断本网站是否需要进行自然语言处理
                 //进行nlp处理之前先去除标签
-            		content = content.replace("</p>", "***");
-            		content = content.replace("<BR>", "***");
-            		content = content.replaceAll("<([\\s\\S]*?)>", "");
-            		content = content.replace("***", "<br/>");
-            		content = content.replace("\n", "<br/>");
-            		content = content.replaceAll("(\\<br/\\>\\s*){2,}", "<br/> ");
-            		content = content.replaceAll("(&nbsp;\\s*)+", " ");
+                content = content.replace("</p>", "***");
+                content = content.replace("<BR>", "***");
+                content = content.replaceAll("<([\\s\\S]*?)>", "");
+                content = content.replace("***", "<br/>");
+                content = content.replace("\n", "<br/>");
+                content = content.replaceAll("(\\<br/\\>\\s*){2,}", "<br/> ");
+                content = content.replaceAll("(&nbsp;\\s*)+", " ");
                 String contentWithoutHtml = content.replaceAll("<br/>", "");
                 try {
                     //抽取关键词,10个词

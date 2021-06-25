@@ -15,7 +15,7 @@ import java.io.IOException;
 @Component
 @Scope("singleton")
 public class StaticValue {
-	
+
     public String esHost;
     public int esPort;
     private Logger LOG = LogManager.getLogger(StaticValue.class);
@@ -90,14 +90,14 @@ public class StaticValue {
     }
 
     public int getEsPort() {
-		return esPort;
-	}
+        return esPort;
+    }
 
-	public void setEsPort(int esPort) {
-		this.esPort = esPort;
-	}
+    public void setEsPort(int esPort) {
+        this.esPort = esPort;
+    }
 
-	public String getCommonsIndex() {
+    public String getCommonsIndex() {
         return commonsIndex;
     }
 

@@ -15,6 +15,7 @@ public class Page {
     private int statusCode;
     private String cookies;
     private transient byte[] capture;
+
     public Page() {
     }
 

@@ -28,11 +28,11 @@ import java.util.Map;
 @Controller
 @RequestMapping("/commons/spider")
 public class CommonsSpiderController extends AsyncGatherBaseController {
-	
+
     private Logger logger = LogManager.getLogger(CommonsSpiderController.class);
-    
+
     private CommonsSpiderService spiderService;
-    
+
 
     @Autowired
     public CommonsSpiderController(@Qualifier("commonsSpiderService") AsyncGatherService asyncGatherService) {

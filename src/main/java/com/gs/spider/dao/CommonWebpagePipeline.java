@@ -32,20 +32,20 @@ import java.util.Set;
  */
 @Component
 public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRemover, Pipeline {
-	
+
     private final static String INDEX_NAME = "commons", TYPE_NAME = "webpage";
-    
+
     private static final String DYNAMIC_FIELD = "dynamic_fields";
-    
+
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Date.class, (JsonDeserializer<Date>) (json, typeOfT, context) -> new Date(json.getAsJsonPrimitive().getAsLong()))
             .registerTypeAdapter(Date.class, (JsonSerializer<Date>) (src, typeOfSrc, context) -> new JsonPrimitive(src.getTime()))
             .setDateFormat(DateFormat.LONG).create();
-    
+
     private static int COUNT = 0;
-    
+
     private Logger logger = LogManager.getLogger(CommonWebpagePipeline.class);
-    
+
     private Map<String, Set<String>> urls = Maps.newConcurrentMap();
 
     @Autowired
@@ -103,7 +103,7 @@ public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRem
             ).get();
             return response.isExists();
         } else {
-        		//如果当前生命周期已抓取,直接置为重复
+            //如果当前生命周期已抓取,直接置为重复
             return true;
         }
     }

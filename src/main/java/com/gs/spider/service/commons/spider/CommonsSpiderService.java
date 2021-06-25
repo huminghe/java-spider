@@ -39,7 +39,7 @@ public class CommonsSpiderService extends AsyncGatherService {
     private final String QUARTZ_TRIGGER_GROUP_NAME = "webpage-spider-trigger";
     private final String QUARTZ_TRIGGER_NAME_SUFFIX = "-hours";
     private Logger LOG = LogManager.getLogger(CommonsSpiderService.class);
-    
+
     @Autowired
     private CommonSpider commonSpider;
     @Autowired
@@ -226,7 +226,7 @@ public class CommonsSpiderService extends AsyncGatherService {
     /**
      * 创建定时任务
      *
-     * @param spiderInfoId  爬虫模板id
+     * @param spiderInfoId    爬虫模板id
      * @param minutesInterval 每几分钟运行一次
      */
     public ResultBundle<String> createQuartzJob(String spiderInfoId, int minutesInterval) {
