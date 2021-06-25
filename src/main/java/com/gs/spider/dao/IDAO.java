@@ -102,7 +102,7 @@ public abstract class IDAO<T> {
 		SearchResponse response = searchRequestBuilder.execute().actionGet();
 		while (true) {
 			for (SearchHit hit : response.getHits()) {
-				bulkRequestBuilder.add(new DeleteRequest(INDEX_NAME, TYPE_NAME, hit.id()));
+				bulkRequestBuilder.add(new DeleteRequest(INDEX_NAME, TYPE_NAME, hit.getId()));
 				if (task != null) {
 					task.increaseCount();
 				}
@@ -139,9 +139,9 @@ public abstract class IDAO<T> {
 			logger.error("按query{}删除数据部分失败,{}", queryBuilder.toString(), bulkResponse.buildFailureMessage());
 		} else {
 			if (task != null) {
-				task.setDescription("按query%s删除数据成功,耗时:%s毫秒", queryBuilder.toString(), bulkResponse.getTookInMillis());
+				task.setDescription("按query%s删除数据成功,耗时:%s毫秒", queryBuilder.toString(), bulkResponse.getIngestTookInMillis());
 			}
-			logger.info("按query{}删除数据成功,耗时:{}毫秒", queryBuilder.toString(), bulkResponse.getTookInMillis());
+			logger.info("按query{}删除数据成功,耗时:{}毫秒", queryBuilder.toString(), bulkResponse.getIngestTookInMillis());
 		}
 		return bulkResponse.hasFailures();
 	}
@@ -155,7 +155,7 @@ public abstract class IDAO<T> {
 		SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME).setTypes(TYPE_NAME)
 				.setQuery(QueryBuilders.matchAllQuery());
 		SearchResponse response = searchRequestBuilder.execute().actionGet();
-		return response.getHits().getTotalHits();
+		return response.getHits().getTotalHits().value;
 	}
 
 	/**
@@ -169,7 +169,7 @@ public abstract class IDAO<T> {
 		SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME).setTypes(TYPE_NAME)
 				.setQuery(queryBuilder);
 		SearchResponse response = searchRequestBuilder.execute().actionGet();
-		return response.getHits().getTotalHits();
+		return response.getHits().getTotalHits().value;
 	}
 
 	/**

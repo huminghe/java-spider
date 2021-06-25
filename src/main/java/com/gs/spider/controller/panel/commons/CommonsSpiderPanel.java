@@ -227,7 +227,7 @@ public class CommonsSpiderPanel extends BaseController {
     @RequestMapping(value = "showRelatedInfo", method = {RequestMethod.GET})
     public ModelAndView showRelatedInfo(String query, @RequestParam(required = false, defaultValue = "10") int size) {
         ModelAndView modelAndView = new ModelAndView("panel/commons/showRelatedInfo");
-        Pair<Map<String, List<Terms.Bucket>>, List<Webpage>> result = commonWebpageService.relatedInfo(query, size).getResult();
+        Pair<Map<String, List<? extends Terms.Bucket>>, List<Webpage>> result = commonWebpageService.relatedInfo(query, size).getResult();
         String title = "";
         String[] queryArray = query.split(":");
         String field = queryArray[0];

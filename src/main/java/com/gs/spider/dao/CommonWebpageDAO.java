@@ -1,11 +1,14 @@
 package com.gs.spider.dao;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.*;
 import com.gs.spider.model.async.Task;
 import com.gs.spider.model.commons.Webpage;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -70,8 +73,13 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
     public String index(Webpage webpage) {
         IndexResponse indexResponse = null;
         try {
+            Map<String, Object> properties = new HashMap<>();
+            String info = gson.toJson(webpage);
+            JSONObject jsonObject = JSON.parseObject(info);
+            Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
+            properties.put("properties", mappingMap);
             indexResponse = client.prepareIndex(INDEX_NAME, TYPE_NAME)
-                    .setSource(gson.toJson(webpage))
+                    .setSource(properties)
                     .get();
             return indexResponse.getId();
         } catch (Exception e) {
@@ -267,7 +275,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
     public List<Webpage> searchByQuery(String query, int size, int page) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME)
-                .setQuery(QueryBuilders.queryStringQuery(query).analyzer("query_ansj").defaultField("content"))
+                .setQuery(QueryBuilders.queryStringQuery(query).analyzer("hanlp").defaultField("content"))
                 .setSize(size).setFrom(size * (page - 1));
         SearchResponse response = searchRequestBuilder.execute().actionGet();
         return warpHits2List(response.getHits());
@@ -338,7 +346,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
      * @param size  结果集数量
      * @return 相关信息
      */
-    public Pair<Map<String, List<Terms.Bucket>>, List<Webpage>> relatedInfo(String query, int size) {
+    public Pair<Map<String, List<? extends Terms.Bucket>>, List<Webpage>> relatedInfo(String query, int size) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME)
                 .setQuery(QueryBuilders.queryStringQuery(query))
@@ -349,7 +357,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
                 .addAggregation(AggregationBuilders.terms("relatedKeywords").field("keywords"))
                 .setSize(size);
         SearchResponse response = searchRequestBuilder.execute().actionGet();
-        Map<String, List<Terms.Bucket>> info = Maps.newHashMap();
+        Map<String, List<? extends Terms.Bucket>> info = Maps.newHashMap();
         info.put("relatedPeople", ((Terms) response.getAggregations().get("relatedPeople")).getBuckets());
         info.put("relatedLocation", ((Terms) response.getAggregations().get("relatedLocation")).getBuckets());
         info.put("relatedInstitution", ((Terms) response.getAggregations().get("relatedInstitution")).getBuckets());
@@ -400,10 +408,10 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME)
                 .setQuery(QueryBuilders.matchAllQuery())
-                .addAggregation(AggregationBuilders.terms("domain").field("domain").size(size).order(Terms.Order.count(false)));
+                .addAggregation(AggregationBuilders.terms("domain").field("domain").size(size));
         SearchResponse response = searchRequestBuilder.execute().actionGet();
         Terms termsAgg = response.getAggregations().get("domain");
-        List<Terms.Bucket> list = termsAgg.getBuckets();
+        List<? extends Terms.Bucket> list = termsAgg.getBuckets();
         Map<String, Long> count = Maps.newLinkedHashMap();
         list.stream().filter(bucket -> ((String) bucket.getKey()).length() > 1).forEach(bucket -> {
             count.put((String) bucket.getKey(), bucket.getDocCount());
@@ -424,7 +432,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
                 .addAggregation(AggregationBuilders.terms("content").field("content").size(200));
         SearchResponse response = searchRequestBuilder.execute().actionGet();
         Terms termsAgg = response.getAggregations().get("content");
-        List<Terms.Bucket> list = termsAgg.getBuckets();
+        List<? extends Terms.Bucket> list = termsAgg.getBuckets();
         Map<String, Long> count = new HashMap<>();
         list.stream().filter(bucket -> ((String) bucket.getKey()).length() > 1).forEach(bucket -> {
             count.put((String) bucket.getKey(), bucket.getDocCount());
@@ -466,7 +474,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
                 AggregationBuilders
                         .dateHistogram("agg")
                         .field("gatherTime")
-                        .dateHistogramInterval(DateHistogramInterval.DAY).order(Histogram.Order.KEY_DESC);
+                        .dateHistogramInterval(DateHistogramInterval.DAY);
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME)
                 .setQuery(QueryBuilders.matchQuery("domain", domain))
@@ -509,7 +517,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
         if (StringUtils.isBlank(query)) {
             query = "*";
         }
-        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("query_ansj").defaultField("content");
+        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp").defaultField("content");
         if (StringUtils.isBlank(domain)) {
             domain = "*";
         } else {
@@ -521,6 +529,6 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
                 .setPostFilter(domainQuery)
                 .setSize(size).setFrom(size * (page - 1));
         SearchHits searchHits = searchRequestBuilder.get().getHits();
-        return Pair.of(warpHits2List(searchHits), searchHits.getTotalHits());
+        return Pair.of(warpHits2List(searchHits), searchHits.getTotalHits().value);
     }
 }

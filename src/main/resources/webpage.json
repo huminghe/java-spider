@@ -1,36 +1,16 @@
 {
   "webpage": {
-    "dynamic_templates": [
-      {
-        "strings": {
-          "match_mapping_type": "text",
-          "mapping": {
-            "type": "text",
-            "analyzer": "index_ansj",
-            "search_analyzer": "query_ansj",
-            "include_in_all": true,
-            "fields": {
-              "raw": {
-                "type": "keyword"
-              }
-            }
-          }
-        }
-      }
-    ],
     "properties": {
       "content": {
         "type": "text",
-        "analyzer": "index_ansj",
-        "search_analyzer": "query_ansj",
-        "include_in_all": true,
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp",
         "store": true
       },
       "title": {
         "type": "text",
-        "analyzer": "index_ansj",
-        "search_analyzer": "query_ansj",
-        "include_in_all": true,
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp",
         "store": true
       },
       "dateStr": {
@@ -41,9 +21,8 @@
       },
       "source": {
         "type": "text",
-        "analyzer": "index_ansj",
-        "search_analyzer": "query_ansj",
-        "include_in_all": true,
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp",
         "fields": {
           "raw": {
             "type": "keyword"
@@ -70,9 +49,8 @@
       },
       "summary": {
         "type": "text",
-        "analyzer": "index_ansj",
-        "search_analyzer": "query_ansj",
-        "include_in_all": true,
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp",
         "store": true
       },
       "namedEntity": {
@@ -93,9 +71,8 @@
       },
       "category": {
         "type": "text",
-        "analyzer": "index_ansj",
-        "search_analyzer": "query_ansj",
-        "include_in_all": true,
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp",
         "fields": {
           "raw": {
             "type": "keyword"
@@ -103,8 +80,7 @@
         }
       },
       "rawHTML": {
-        "type": "binary",
-        "include_in_all": false
+        "type": "binary"
       },
       "dynamic_fields": {
         "dynamic": true,

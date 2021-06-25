@@ -1,10 +1,13 @@
 package com.gs.spider.dao;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.gs.spider.model.commons.SpiderInfo;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +25,9 @@ import org.elasticsearch.search.SearchHits;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -59,8 +64,12 @@ public class SpiderInfoDAO extends IDAO<SpiderInfo> {
             }
         }
         try {
+            Map<String, Object> properties = new HashMap<>();
+            JSONObject jsonObject = JSON.parseObject(gson.toJson(spiderInfo));
+            Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
+            properties.put("properties", mappingMap);
             indexResponse = client.prepareIndex(INDEX_NAME, TYPE_NAME)
-                    .setSource(gson.toJson(spiderInfo))
+                    .setSource(properties)
                     .get();
             logger.debug("索引爬虫模板成功");
             return indexResponse.getId();

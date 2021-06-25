@@ -1,5 +1,7 @@
 package com.gs.spider.dao;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.gs.spider.utils.StaticValue;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -9,11 +11,11 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ESClient
@@ -35,10 +39,10 @@ public class ESClient {
     private static final String WEBPAGE_TYPE_NAME = "webpage";
     private static final String SPIDER_INFO_TYPE_NAME = "spiderinfo";
     private static final String SPIDER_INFO_INDEX_NAME = "spiderinfo";
-    
+
     private Logger logger = LogManager.getLogger(ESClient.class);
     private Client client;
-    
+
     @Autowired
     private StaticValue staticValue;
 
@@ -65,12 +69,12 @@ public class ESClient {
         }
         if (client != null) return client;
         logger.info("正在初始化ElasticSearch客户端," + staticValue.getEsHost());
-        
+
         Settings settings = Settings.builder()
-        		.put("cluster.name", staticValue.getEsClusterName()).build();
+                .put("cluster.name", staticValue.getEsClusterName()).build();
         try {
-        	client = new PreBuiltTransportClient(settings)
-        			.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(staticValue.getEsHost()), staticValue.getEsPort()));
+            client = new PreBuiltTransportClient(settings)
+                    .addTransportAddress(new TransportAddress(InetAddress.getByName(staticValue.getEsHost()), staticValue.getEsPort()));
             final ClusterHealthResponse healthResponse = client.admin().cluster().prepareHealth()
                     .setTimeout(TimeValue.timeValueMinutes(1)).execute().actionGet();
             if (healthResponse.isTimedOut()) {
@@ -97,11 +101,16 @@ public class ESClient {
                 return false;
             }
             logger.debug(type + " MappingFile:" + mappingFile.getPath());
-            PutMappingResponse mapPuttingResponse = null;
+            AcknowledgedResponse mapPuttingResponse = null;
 
             PutMappingRequest putMappingRequest = null;
             try {
-                putMappingRequest = Requests.putMappingRequest(index).type(type).source(FileUtils.readFileToString(mappingFile));
+                Map<String, Object> properties = new HashMap<>();
+                String info = FileUtils.readFileToString(mappingFile);
+                JSONObject jsonObject = JSON.parseObject(info);
+                Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
+                properties.put("properties", mappingMap);
+                putMappingRequest = Requests.putMappingRequest(index).type(type).source(properties);
             } catch (IOException e) {
                 logger.error("创建 jvmSample mapping 失败," + e.getLocalizedMessage());
             }
@@ -131,9 +140,12 @@ public class ESClient {
             logger.info(index + " index 不存在,正在准备创建index");
             CreateIndexResponse createIndexResponse = null;
             try {
+                String info = FileUtils.readFileToString(indexMappingFile);
+                JSONObject jsonObject = JSON.parseObject(info);
+
                 createIndexResponse = client.admin().indices()
                         .prepareCreate(index)
-                        .setSettings(FileUtils.readFileToString(indexMappingFile))
+                        .setSettings((Map<String, Object>) jsonObject.clone())
                         .execute().actionGet();
             } catch (IOException e) {
                 logger.error("创建 " + index + " index 失败");

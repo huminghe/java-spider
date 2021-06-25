@@ -1,11 +1,14 @@
 package com.gs.spider.dao;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import com.google.gson.*;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.get.GetResponse;
@@ -20,6 +23,7 @@ import us.codecraft.webmagic.scheduler.component.DuplicateRemover;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -119,9 +123,14 @@ public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRem
         SpiderInfo spiderInfo = resultItems.get("spiderInfo");
         Webpage webpage = convertResultItems2Webpage(resultItems);
         try {
+            Map<String, Object> properties = new HashMap<>();
+            String info = gson.toJson(webpage);
+            JSONObject jsonObject = JSON.parseObject(info);
+            Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
+            properties.put("properties", mappingMap);
             client.prepareIndex(INDEX_NAME, TYPE_NAME)
                     .setId(Hashing.md5().hashString(webpage.getUrl(), Charset.forName("utf-8")).toString())
-                    .setSource(gson.toJson(webpage))
+                    .setSource(properties)
                     .get();
         } catch (Exception e) {
             logger.error("索引 Webpage 出错," + e.getLocalizedMessage());

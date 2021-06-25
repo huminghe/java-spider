@@ -1,7 +1,7 @@
 {
-  "esHost": "192.68.0.1",
+  "esHost": "127.0.0.1",
   "esPort": 9300,
-  "esClusterName": "elasticsearch",
+  "esClusterName": "elasticsearch_brew",
   "commonsIndex": "commons",
   "maxHttpDownloadLength": 1048576,
   "commonsSpiderDebug": true,

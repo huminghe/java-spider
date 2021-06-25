@@ -202,7 +202,7 @@ public class CommonWebpageService {
      * @param size  结果集数量
      * @return 相关信息
      */
-    public ResultBundle<Pair<Map<String, List<Terms.Bucket>>, List<Webpage>>> relatedInfo(String query, int size) {
+    public ResultBundle<Pair<Map<String, List<? extends Terms.Bucket>>, List<Webpage>>> relatedInfo(String query, int size) {
         return bundleBuilder.bundle(query, () -> commonWebpageDAO.relatedInfo(query, size));
     }
 
