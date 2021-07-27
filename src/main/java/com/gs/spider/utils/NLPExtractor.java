@@ -34,4 +34,6 @@ public interface NLPExtractor {
      * @return 关键词列表
      */
     List<String> extractKeywords(String content);
+
+    List<String> extractKeywords(String title, String content);
 }

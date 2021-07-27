@@ -8,7 +8,6 @@ import com.google.common.hash.Hashing;
 import com.google.gson.*;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.get.GetResponse;
@@ -23,7 +22,6 @@ import us.codecraft.webmagic.scheduler.component.DuplicateRemover;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,7 +31,7 @@ import java.util.Set;
 @Component
 public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRemover, Pipeline {
 
-    private final static String INDEX_NAME = "commons", TYPE_NAME = "webpage";
+    private final static String INDEX_NAME = "commonsv2", TYPE_NAME = "webpage";
 
     private static final String DYNAMIC_FIELD = "dynamic_fields";
 
@@ -64,7 +62,7 @@ public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRem
         webpage.setContent(resultItems.get("content"));
         webpage.setTitle(resultItems.get("title"));
         webpage.setUrl(resultItems.get("url"));
-        webpage.setId(Hashing.md5().hashString(webpage.getUrl(), Charset.forName("utf-8")).toString());
+        webpage.setId(Hashing.md5().hashString(webpage.getUrl().replaceAll("https://", "http://"), Charset.forName("utf-8")).toString());
         webpage.setDomain(resultItems.get("domain"));
         webpage.setSpiderInfoId(resultItems.get("spiderInfoId"));
         webpage.setGathertime(resultItems.get("gatherTime"));
@@ -80,6 +78,10 @@ public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRem
         webpage.setAttachmentList(resultItems.get("attachmentList"));
         webpage.setImageList(resultItems.get("imageList"));
         webpage.setProcessTime(resultItems.get("processTime"));
+        webpage.setContentCleaned(resultItems.get("contentCleaned"));
+        webpage.setAlgoSummary(resultItems.get("strongSummary"));
+        webpage.setDomainName(resultItems.get("domainName"));
+        webpage.setLevel(resultItems.get("level"));
         return webpage;
     }
 
@@ -99,7 +101,7 @@ public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRem
         //初始化已采集网站列表缓存
         if (tempLists.add(request.getUrl())) {//先检查当前生命周期是否抓取过,如果当前生命周期未抓取,则进一步检查ES
             GetResponse response = client.prepareGet(INDEX_NAME, TYPE_NAME,
-                    Hashing.md5().hashString(request.getUrl(), Charset.forName("utf-8")).toString()
+                    Hashing.md5().hashString(request.getUrl().replaceAll("https://", "http://"), Charset.forName("utf-8")).toString()
             ).get();
             return response.isExists();
         } else {
@@ -123,14 +125,12 @@ public class CommonWebpagePipeline extends IDAO<Webpage> implements DuplicateRem
         SpiderInfo spiderInfo = resultItems.get("spiderInfo");
         Webpage webpage = convertResultItems2Webpage(resultItems);
         try {
-            Map<String, Object> properties = new HashMap<>();
             String info = gson.toJson(webpage);
             JSONObject jsonObject = JSON.parseObject(info);
             Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
-            properties.put("properties", mappingMap);
             client.prepareIndex(INDEX_NAME, TYPE_NAME)
-                    .setId(Hashing.md5().hashString(webpage.getUrl(), Charset.forName("utf-8")).toString())
-                    .setSource(properties)
+                    .setId(Hashing.md5().hashString(webpage.getUrl().replaceAll("https://", "http://"), Charset.forName("utf-8")).toString())
+                    .setSource(mappingMap)
                     .get();
         } catch (Exception e) {
             logger.error("索引 Webpage 出错," + e.getLocalizedMessage());

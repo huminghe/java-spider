@@ -98,6 +98,12 @@
       "country": {
         "type": "keyword"
       },
+      "level": {
+        "type": "long"
+      },
+      "urlXpath": {
+        "type": "keyword"
+      },
       "dynamicFields": {
         "type": "nested",
         "properties": {

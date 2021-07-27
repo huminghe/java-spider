@@ -42,19 +42,17 @@ public abstract class ESPipeline extends IDAO implements Pipeline {
                 xContentBuilder.field((String) entry.getKey(), entry.getValue());
             }
             String json = Strings.toString(xContentBuilder.endObject());
-            Map<String, Object> properties = new HashMap<>();
             JSONObject jsonObject = JSON.parseObject(json);
             Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
-            properties.put("properties", mappingMap);
             IndexResponse response = null;
             if (StringUtils.isNotBlank(resultItems.get("id"))) {
                 response = client
                         .prepareIndex(INDEX_NAME, TYPE_NAME, resultItems.get("id"))
-                        .setSource(properties).get();
+                        .setSource(mappingMap).get();
             } else {
                 response = client
                         .prepareIndex(INDEX_NAME, TYPE_NAME)
-                        .setSource(properties).get();
+                        .setSource(mappingMap).get();
             }
             if (response.getResult() != IndexResponse.Result.CREATED)
                 LOG.error("索引失败,可能重复创建,resultItem:" + resultItems);

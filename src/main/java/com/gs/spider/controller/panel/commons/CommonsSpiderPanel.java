@@ -6,6 +6,7 @@ import com.gs.spider.model.async.State;
 import com.gs.spider.model.async.Task;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
+import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.service.commons.spider.CommonsSpiderService;
@@ -73,7 +74,7 @@ public class CommonsSpiderPanel extends BaseController {
         }
         page = page < 1 ? 1 : page;
         TablePage tp = null;
-        ResultBundle<Pair<List<Webpage>, Long>> resultBundle = commonWebpageService.getWebPageByKeywordAndDomain(query, domain, 10, page);
+        ResultBundle<Pair<List<WebpageWithHighlight>, Long>> resultBundle = commonWebpageService.getWebPageByKeywordAndDomain(query, domain, 10, page);
         if (resultBundle.getResult().getRight() > 0) {
             tp = new TablePage(resultBundle.getResult().getRight(), page, 10);
             tp.checkAgain();

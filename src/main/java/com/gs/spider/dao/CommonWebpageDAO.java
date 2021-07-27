@@ -7,8 +7,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.*;
 import com.gs.spider.model.async.Task;
+import com.gs.spider.model.commons.Highlight;
 import com.gs.spider.model.commons.Webpage;
-import org.apache.commons.io.FileUtils;
+import com.gs.spider.model.commons.WebpageWithHighlight;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,6 +34,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +45,7 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.moreLikeThisQuery;
 
@@ -50,7 +54,7 @@ import static org.elasticsearch.index.query.QueryBuilders.moreLikeThisQuery;
  */
 @Component
 public class CommonWebpageDAO extends IDAO<Webpage> {
-    private final static String INDEX_NAME = "commons", TYPE_NAME = "webpage";
+    private final static String INDEX_NAME = "commonsv2", TYPE_NAME = "webpage";
 
     private static final int SCROLL_TIMEOUT = 1;
 
@@ -73,13 +77,11 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
     public String index(Webpage webpage) {
         IndexResponse indexResponse = null;
         try {
-            Map<String, Object> properties = new HashMap<>();
             String info = gson.toJson(webpage);
             JSONObject jsonObject = JSON.parseObject(info);
             Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
-            properties.put("properties", mappingMap);
             indexResponse = client.prepareIndex(INDEX_NAME, TYPE_NAME)
-                    .setSource(properties)
+                    .setSource(mappingMap)
                     .get();
             return indexResponse.getId();
         } catch (Exception e) {
@@ -155,7 +157,12 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
                 searchResponse -> {
                     List<String> resultList = Lists.newLinkedList();
                     List<Webpage> webpageList = warpHits2List(searchResponse.getHits());
-                    webpageList.forEach(webpage -> resultList.add(gson.toJson(includeRaw ? webpage : webpage.setRawHTML(null))));
+                    webpageList.forEach(webpage -> {
+                        if (!includeRaw) {
+                            webpage.setRawHTML(null);
+                        }
+                        resultList.add(gson.toJson(webpage));
+                    });
                     return resultList;
                 }, outputStream);
     }
@@ -262,6 +269,28 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
             webpageList.add(warpHits2Info(searchHitFields));
         });
         return webpageList;
+    }
+
+    private WebpageWithHighlight warpHitWithHighlight(SearchHit hit, String name) {
+        WebpageWithHighlight webpage = gson.fromJson(hit.getSourceAsString(), WebpageWithHighlight.class);
+        webpage.setId(hit.getId());
+        Map<String, HighlightField> highMap = hit.getHighlightFields();
+        HighlightField high = highMap.getOrDefault(name, null);
+        if (high != null) {
+            List<String> content = Arrays.stream(high.getFragments()).map(x -> x.string()).collect(Collectors.toList());
+            webpage.setHighlights(new Highlight(content));
+        } else {
+            webpage.setHighlights(new Highlight());
+        }
+        return webpage;
+    }
+
+    private List<WebpageWithHighlight> warpHitsWithHighlight(SearchHits hits, String name) {
+        List<WebpageWithHighlight> webList = Lists.newLinkedList();
+        hits.forEach(hit -> {
+            webList.add(warpHitWithHighlight(hit, name));
+        });
+        return webList;
     }
 
     /**
@@ -510,25 +539,27 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
      * @param page
      * @return
      */
-    public Pair<List<Webpage>, Long> getWebpageByKeywordAndDomain(String query, String domain, int size, int page) {
+    public Pair<List<WebpageWithHighlight>, Long> getWebpageByKeywordAndDomain(String query, String domain, int size, int page) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME);
         QueryBuilder keyWorkQuery, domainQuery;
         if (StringUtils.isBlank(query)) {
             query = "*";
         }
-        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp").defaultField("content");
+        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp").defaultField("contentCleaned");
         if (StringUtils.isBlank(domain)) {
             domain = "*";
         } else {
             domain = "*" + domain + "*";
         }
+        HighlightBuilder highlightBuilder = new HighlightBuilder().field("contentCleaned");
         domainQuery = QueryBuilders.queryStringQuery(domain).field("domain");
 
         searchRequestBuilder.setQuery(keyWorkQuery)
                 .setPostFilter(domainQuery)
+                .highlighter(highlightBuilder)
                 .setSize(size).setFrom(size * (page - 1));
         SearchHits searchHits = searchRequestBuilder.get().getHits();
-        return Pair.of(warpHits2List(searchHits), searchHits.getTotalHits().value);
+        return Pair.of(warpHitsWithHighlight(searchHits, "contentCleaned"), searchHits.getTotalHits().value);
     }
 }

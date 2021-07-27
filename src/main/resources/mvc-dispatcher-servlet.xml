@@ -34,10 +34,10 @@
         <property name="spiderInfoDAO" ref="spiderInfoDAO"/>
         <property name="commonWebpagePipeline" ref="commonWebpagePipeline"/>
         <property name="contentLengthLimitHttpClientDownloader" ref="contentLengthLimitHttpClientDownloader"/>
-        <property name="keywordsExtractor" ref="HANLPExtractor"/>
+        <property name="keywordsExtractor" ref="keywordExtractor"/>
         <property name="summaryExtractor" ref="HANLPExtractor"/>
         <property name="namedEntitiesExtractor" ref="HANLPExtractor"/>
-        <property name="casperjsDownloader" ref="casperjsDownloader"/>
+        <property name="action" ref="puppeAction"/>
         <!--普通网页爬虫数据输出管道配置-->
         <property name="pipelineList">
             <list>

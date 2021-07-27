@@ -30,11 +30,11 @@ public class HANLPExtractor implements NLPExtractor {
     public Map<String, Set<String>> extractNamedEntity(String content) {
         List<Term> termList = segment.seg(content);
         Set<String> nrList = termList.stream().filter(term -> term.nature.startsWith("nr"))
-                .map(term -> term.word).collect(Collectors.toSet());
+            .map(term -> term.word).collect(Collectors.toSet());
         Set<String> nsList = termList.stream().filter(term -> term.nature.startsWith("ns"))
-                .map(term -> term.word).collect(Collectors.toSet());
+            .map(term -> term.word).collect(Collectors.toSet());
         Set<String> ntList = termList.stream().filter(term -> term.nature.startsWith("nt"))
-                .map(term -> term.word).collect(Collectors.toSet());
+            .map(term -> term.word).collect(Collectors.toSet());
         Map<String, Set<String>> namedEntity = Maps.newHashMap();
         namedEntity.put("nr", nrList);
         namedEntity.put("ns", nsList);
@@ -59,7 +59,12 @@ public class HANLPExtractor implements NLPExtractor {
      * @return 关键词列表
      */
     public List<String> extractKeywords(String content) {
-        return HanLP.extractKeyword(content, 10);
+        List<String> keywordsList = HanLP.extractKeyword(content, 10);
+        return keywordsList.stream().filter(x -> x.length() > 2).collect(Collectors.toList());
+    }
+
+    public List<String> extractKeywords(String title, String content) {
+        return extractKeywords(title + " " + content);
     }
 
 }

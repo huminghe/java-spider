@@ -374,6 +374,16 @@
                                value="${spiderInfo.timeout}">
                     </div>
                     <div class="form-group">
+                        <label for="level">level</label>
+                        <input type="number" class="form-control" id="level" name="level" placeholder="级别"
+                               value="${spiderInfo.level}">
+                    </div>
+                    <div class="form-group">
+                        <label for="urlXpath">urlXpath</label>
+                        <input type="text" class="form-control" id="urlXpath" name="urlXpath" placeholder="url链接正则"
+                               value="${spiderInfo.urlXpath}">
+                    </div>
+                    <div class="form-group">
                         <label for="contentReg">contentReg</label>
                         <input type="text" class="form-control" id="contentReg" name="contentReg" placeholder="正文正则表达式"
                                value="${spiderInfo.contentReg}">

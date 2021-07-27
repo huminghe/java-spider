@@ -5,6 +5,7 @@ import com.gs.spider.dao.CommonWebpageDAO;
 import com.gs.spider.gather.commons.CommonSpider;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
+import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
@@ -247,7 +248,7 @@ public class CommonWebpageService {
      * @param page
      * @return
      */
-    public ResultBundle<Pair<List<Webpage>, Long>> getWebPageByKeywordAndDomain(String query, String domain, int size, int page) {
+    public ResultBundle<Pair<List<WebpageWithHighlight>, Long>> getWebPageByKeywordAndDomain(String query, String domain, int size, int page) {
         return bundleBuilder.bundle(query, () -> commonWebpageDAO.getWebpageByKeywordAndDomain(query, domain, size, page));
     }
 }

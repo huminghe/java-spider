@@ -8,10 +8,13 @@ import com.gs.spider.dao.CommonWebpagePipeline;
 import com.gs.spider.dao.SpiderInfoDAO;
 import com.gs.spider.gather.async.AsyncGather;
 import com.gs.spider.gather.async.TaskManager;
+import com.gs.spider.gather.commons.puppeteer.AbstractChromiumAction;
+import com.gs.spider.gather.commons.puppeteer.ChromiumOptions;
 import com.gs.spider.model.async.State;
 import com.gs.spider.model.async.Task;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
+import com.gs.spider.utils.Loader;
 import com.gs.spider.utils.NLPExtractor;
 import com.gs.spider.utils.StaticValue;
 import org.apache.commons.io.FileUtils;
@@ -25,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +36,7 @@ import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
+import us.codecraft.webmagic.SpiderListener;
 import us.codecraft.webmagic.monitor.SpiderMonitor;
 import us.codecraft.webmagic.pipeline.Pipeline;
 import us.codecraft.webmagic.pipeline.ResultItemsCollectorPipeline;
@@ -105,6 +110,8 @@ public class CommonSpider extends AsyncGather {
 
     private static final String HTML_SUFFIX = " </body></html>";
 
+    private static final Map<String, String> domainNameMap = Loader.loadMapping("/data/domain_info.txt");
+
     static {
         try {
             ignoredUrls = FileUtils.readLines(new File(CommonSpider.class.getClassLoader().getResource("ignoredUrls.txt").getFile()));
@@ -167,7 +174,13 @@ public class CommonSpider extends AsyncGather {
             //判断本网站是否只抽取入口页,和当前页面是不是入口页
             if (!info.isGatherFirstPage() || (info.isGatherFirstPage() && startPage)) {
                 List<String> links = null;
-                if (StringUtils.isNotBlank(info.getUrlReg())) {//url正则式不为空
+                if (StringUtils.isNotBlank(info.getUrlXpath())) {
+                    links = page.getHtml().xpath(info.getUrlXpath()).all().stream()
+                        .map(s -> {
+                            int indexOfSharp = s.indexOf("#");
+                            return s.substring(0, indexOfSharp == -1 ? s.length() : indexOfSharp);
+                        }).collect(Collectors.toList());
+                } else if (StringUtils.isNotBlank(info.getUrlReg())) {//url正则式不为空
                     links = page.getHtml().links().regex(info.getUrlReg()).all().stream()
                             .map(s -> {
                                 int indexOfSharp = s.indexOf("#");
@@ -227,6 +240,11 @@ public class CommonSpider extends AsyncGather {
             if (info.isSaveCapture()) {
                 page.putField("rawHTML", page.getHtml().get());
             }
+            String domainName = domainNameMap.getOrDefault(info.getDomain(), "其他");
+            page.putField("domainName", domainName);
+            int level = info.getLevel();
+            page.putField("level", level);
+
             //转换静态字段
             if (info.getStaticFields() != null && info.getStaticFields().size() > 0) {
                 Map<String, String> staticFieldList = Maps.newHashMap();
@@ -237,10 +255,19 @@ public class CommonSpider extends AsyncGather {
             }
             ///////////////////////////////////////////////////////
             String content;
+            List<String> strongList = Lists.newLinkedList();
             if (!StringUtils.isBlank(info.getContentXPath())) {//如果有正文的XPath的话优先使用XPath
                 StringBuilder buffer = new StringBuilder();
                 page.getHtml().xpath(info.getContentXPath()).all().forEach(buffer::append);
                 content = buffer.toString();
+
+                String strongContentXPath = info.getContentXPath() + "//strong";
+                page.getHtml().xpath(strongContentXPath).all().forEach(x -> {
+                    if (!x.contains("作者") && !x.contains("记者")) {
+                        strongList.add(Jsoup.parse(x).text());
+                    }
+                });
+                page.putField("summary", strongList);
             } else if (!StringUtils.isBlank(info.getContentReg())) {//没有正文XPath
                 StringBuilder buffer = new StringBuilder();
                 page.getHtml().regex(info.getContentReg()).all().forEach(buffer::append);
@@ -270,6 +297,12 @@ public class CommonSpider extends AsyncGather {
                 page.setSkip(true);
                 return;
             }
+            String contentCleaned = Jsoup.parse(content).text();
+            page.putField("contentCleaned", contentCleaned);
+            if (info.isNeedContent() && StringUtils.isBlank(contentCleaned)) {
+                page.setSkip(true);
+                return;
+            }
             //抽取标题
             String title = null;
             if (!StringUtils.isBlank(info.getTitleXPath())) {//提取网页标题
@@ -279,7 +312,7 @@ public class CommonSpider extends AsyncGather {
             } else {//如果不写默认是title
                 title = page.getHtml().getDocument().title();
             }
-            page.putField("title", title);
+            page.putField("title", title.trim());
             if (info.isNeedTitle() && StringUtils.isBlank(title)) {//if the title is blank ,skip it!
                 page.setSkip(true);
                 return;
@@ -322,6 +355,7 @@ public class CommonSpider extends AsyncGather {
             String publishTime = null;
             if (!StringUtils.isBlank(info.getPublishTimeXPath())) {//文章发布时间规则
                 publishTime = page.getHtml().xpath(info.getPublishTimeXPath()).get();
+                publishTime = Jsoup.parse(publishTime).text();
             } else if (!StringUtils.isBlank(info.getPublishTimeReg())) {
                 publishTime = page.getHtml().regex(info.getPublishTimeReg()).get();
             }
@@ -373,19 +407,24 @@ public class CommonSpider extends AsyncGather {
             ///////////////////////////////////////////////////////
             if (info.isDoNLP()) {//判断本网站是否需要进行自然语言处理
                 //进行nlp处理之前先去除标签
-                content = content.replace("</p>", "***");
-                content = content.replace("<BR>", "***");
-                content = content.replaceAll("<([\\s\\S]*?)>", "");
-                content = content.replace("***", "<br/>");
-                content = content.replace("\n", "<br/>");
-                content = content.replaceAll("(\\<br/\\>\\s*){2,}", "<br/> ");
-                content = content.replaceAll("(&nbsp;\\s*)+", " ");
-                String contentWithoutHtml = content.replaceAll("<br/>", "");
+                // content = content.replace("</p>", "***");
+                // content = content.replace("<BR>", "***");
+                // content = content.replaceAll("<([\\s\\S]*?)>", "");
+                // content = content.replace("***", "<br/>");
+                // content = content.replace("\n", "<br/>");
+                // content = content.replaceAll("(\\<br/\\>\\s*){2,}", "<br/> ");
+                // content = content.replaceAll("(&nbsp;\\s*)+", " ");
+                // String contentWithoutHtml = content.replaceAll("<br/>", "");
+                String contentWithoutHtml = contentCleaned;
                 try {
                     //抽取关键词,10个词
                     page.putField("keywords", keywordsExtractor.extractKeywords(contentWithoutHtml));
                     //抽取摘要,5句话
-                    page.putField("summary", summaryExtractor.extractSummary(contentWithoutHtml));
+                    List<String> algoSummary = summaryExtractor.extractSummary(contentWithoutHtml);
+                    if (strongList.isEmpty()) {
+                        page.putField("summary", algoSummary);
+                    }
+                    page.putField("algoSummary", StringUtils.join(algoSummary, "\n"));
                     //抽取命名实体
                     page.putField("namedEntity", namedEntitiesExtractor.extractNamedEntity(contentWithoutHtml));
                 } catch (Exception e) {
@@ -400,12 +439,12 @@ public class CommonSpider extends AsyncGather {
             task.setDescription("处理网页出错，%s", e.toString());
         }
     };
-    private CasperjsDownloader casperjsDownloader;
     private List<Pipeline> pipelineList;
     private CommonWebpagePipeline commonWebpagePipeline;
     private ContentLengthLimitHttpClientDownloader contentLengthLimitHttpClientDownloader;
     private CommonWebpageDAO commonWebpageDAO;
     private SpiderInfoDAO spiderInfoDAO;
+    private AbstractChromiumAction action;
 
     @Autowired
     public CommonSpider(TaskManager taskManager, StaticValue staticValue) throws InterruptedException, BindException {
@@ -538,7 +577,15 @@ public class CommonSpider extends AsyncGather {
                 .addPipeline(resultItemsCollectorPipeline)
                 .setScheduler(queueScheduler);
         if (info.isAjaxSite() && StringUtils.isNotBlank(staticValue.getAjaxDownloader())) {
-            spider.setDownloader(casperjsDownloader);
+            List<SpiderListener> spiderListenerList = new ArrayList<>(1);
+
+            //下载器，配置代理
+            ChromiumOptions options = new ChromiumOptions();
+            options.setUseHeadless(true);
+
+            PuppeteerDownloader puppeteerDownloader = new PuppeteerDownloader(spiderListenerList, options);
+            puppeteerDownloader.setChromiumAction(action);
+            spider.setDownloader(puppeteerDownloader);
         } else {
             spider.setDownloader(contentLengthLimitHttpClientDownloader);
         }
@@ -706,7 +753,15 @@ public class CommonSpider extends AsyncGather {
                 .thread(info.getThread())
                 .setUUID(task.getTaskId()));
         if (info.isAjaxSite() && StringUtils.isNotBlank(staticValue.getAjaxDownloader())) {
-            spider.setDownloader(casperjsDownloader);
+            List<SpiderListener> spiderListenerList = new ArrayList<>(1);
+
+            //下载器，配置代理
+            ChromiumOptions options = new ChromiumOptions();
+            options.setUseHeadless(true);
+
+            PuppeteerDownloader puppeteerDownloader = new PuppeteerDownloader(spiderListenerList, options);
+            puppeteerDownloader.setChromiumAction(action);
+            spider.setDownloader(puppeteerDownloader);
         } else {
             spider.setDownloader(contentLengthLimitHttpClientDownloader);
         }
@@ -783,12 +838,12 @@ public class CommonSpider extends AsyncGather {
         return this;
     }
 
-    public CasperjsDownloader getCasperjsDownloader() {
-        return casperjsDownloader;
+    public AbstractChromiumAction getAction() {
+        return action;
     }
 
-    public CommonSpider setCasperjsDownloader(CasperjsDownloader casperjsDownloader) {
-        this.casperjsDownloader = casperjsDownloader;
+    public CommonSpider setAction(AbstractChromiumAction action) {
+        this.action = action;
         return this;
     }
 

@@ -35,10 +35,10 @@ import java.util.Map;
 @Scope("prototype")
 public class ESClient {
     private final static String COMMON_INDEX_CONFIG = "commonIndex.json";
-    private static final String COMMONS_INDEX_NAME = "commons";
+    private static final String COMMONS_INDEX_NAME = "commonsv2";
     private static final String WEBPAGE_TYPE_NAME = "webpage";
     private static final String SPIDER_INFO_TYPE_NAME = "spiderinfo";
-    private static final String SPIDER_INFO_INDEX_NAME = "spiderinfo";
+    private static final String SPIDER_INFO_INDEX_NAME = "spiderinfov2";
 
     private Logger logger = LogManager.getLogger(ESClient.class);
     private Client client;
@@ -105,12 +105,10 @@ public class ESClient {
 
             PutMappingRequest putMappingRequest = null;
             try {
-                Map<String, Object> properties = new HashMap<>();
                 String info = FileUtils.readFileToString(mappingFile);
                 JSONObject jsonObject = JSON.parseObject(info);
                 Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
-                properties.put("properties", mappingMap);
-                putMappingRequest = Requests.putMappingRequest(index).type(type).source(properties);
+                putMappingRequest = Requests.putMappingRequest(index).type(type).source(mappingMap);
             } catch (IOException e) {
                 logger.error("创建 jvmSample mapping 失败," + e.getLocalizedMessage());
             }

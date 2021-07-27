@@ -10,6 +10,10 @@ import java.util.List;
  * 网页抽取模板
  */
 public class SpiderInfo {
+
+    private int level = 0;
+
+    private String urlXpath;
     /**
      * 使用多少抓取线程
      */
@@ -158,6 +162,24 @@ public class SpiderInfo {
     private int proxyPort;
     private String proxyUsername;
     private String proxyPassword;
+
+    public int getLevel() {
+        return level;
+    }
+
+    public SpiderInfo setLevel(int level) {
+        this.level = level;
+        return this;
+    }
+
+    public String getUrlXpath() {
+        return urlXpath;
+    }
+
+    public SpiderInfo setUrlXpath(String urlXpath) {
+        this.urlXpath = urlXpath;
+        return this;
+    }
 
     public int getThread() {
         return thread;
@@ -561,6 +583,8 @@ public class SpiderInfo {
                 .append(getStaticFields(), that.getStaticFields())
                 .append(isSaveCapture(), that.isSaveCapture())
                 .append(isAutoDetectPublishDate(), that.isAutoDetectPublishDate())
+                .append(getLevel(), that.getLevel())
+                .append(getUrlXpath(), that.getUrlXpath())
                 .isEquals();
     }
 
@@ -600,6 +624,8 @@ public class SpiderInfo {
                 .append(getStaticFields())
                 .append(isSaveCapture())
                 .append(isAutoDetectPublishDate())
+                .append(getLevel())
+                .append(getUrlXpath())
                 .toHashCode();
     }
 

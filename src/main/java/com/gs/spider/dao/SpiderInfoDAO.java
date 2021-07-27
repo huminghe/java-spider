@@ -36,7 +36,7 @@ import java.util.concurrent.ExecutionException;
 @Component
 public class SpiderInfoDAO extends IDAO<SpiderInfo> {
     private final static Logger logger = LogManager.getLogger(SpiderInfoDAO.class);
-    private final static String INDEX_NAME = "spiderinfo", TYPE_NAME = "spiderinfo";
+    private final static String INDEX_NAME = "spiderinfov2", TYPE_NAME = "spiderinfo";
     private static final Gson gson = new GsonBuilder().create();
 
     @Autowired
@@ -64,12 +64,10 @@ public class SpiderInfoDAO extends IDAO<SpiderInfo> {
             }
         }
         try {
-            Map<String, Object> properties = new HashMap<>();
             JSONObject jsonObject = JSON.parseObject(gson.toJson(spiderInfo));
             Map<String, Object> mappingMap = (Map<String, Object>) jsonObject.clone();
-            properties.put("properties", mappingMap);
             indexResponse = client.prepareIndex(INDEX_NAME, TYPE_NAME)
-                    .setSource(properties)
+                    .setSource(mappingMap)
                     .get();
             logger.debug("索引爬虫模板成功");
             return indexResponse.getId();

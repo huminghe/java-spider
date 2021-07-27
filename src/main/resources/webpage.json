@@ -2,13 +2,37 @@
   "webpage": {
     "properties": {
       "content": {
-        "type": "text",
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        },
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp",
+        "store": true
+      },
+      "contentCleaned":{
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        },
         "analyzer": "hanlp",
         "search_analyzer": "hanlp",
         "store": true
       },
       "title": {
-        "type": "text",
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        },
         "analyzer": "hanlp",
         "search_analyzer": "hanlp",
         "store": true
@@ -18,16 +42,6 @@
       },
       "url": {
         "type": "keyword"
-      },
-      "source": {
-        "type": "text",
-        "analyzer": "hanlp",
-        "search_analyzer": "hanlp",
-        "fields": {
-          "raw": {
-            "type": "keyword"
-          }
-        }
       },
       "id": {
         "type": "keyword"
@@ -41,14 +55,39 @@
       "domain": {
         "type": "keyword"
       },
+      "domainName": {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        },
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp"
+      },
       "spiderUUID": {
         "type": "keyword"
       },
       "keywords": {
-        "type": "keyword"
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        },
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp"
       },
       "summary": {
-        "type": "text",
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        },
         "analyzer": "hanlp",
         "search_analyzer": "hanlp",
         "store": true
@@ -70,14 +109,15 @@
         "type": "date"
       },
       "category": {
-        "type": "text",
-        "analyzer": "hanlp",
-        "search_analyzer": "hanlp",
-        "fields": {
-          "raw": {
-            "type": "keyword"
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
           }
-        }
+        },
+        "analyzer": "hanlp",
+        "search_analyzer": "hanlp"
       },
       "rawHTML": {
         "type": "binary"
@@ -87,6 +127,9 @@
         "properties": {}
       },
       "processTime": {
+        "type": "long"
+      },
+      "level": {
         "type": "long"
       }
     }
