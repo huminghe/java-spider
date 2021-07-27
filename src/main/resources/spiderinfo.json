@@ -12,8 +12,8 @@
       },
       "siteName": {
         "type": "text",
-        "analyzer": "hanlp",
-        "search_analyzer": "hanlp",
+        "analyzer": "hanlp_per",
+        "search_analyzer": "hanlp_per",
         "fields": {
           "raw": {
             "type": "keyword"
