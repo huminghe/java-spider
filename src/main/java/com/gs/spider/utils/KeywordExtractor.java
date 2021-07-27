@@ -6,7 +6,7 @@ import com.gs.spider.model.utils.MatchHit;
 import com.gs.spider.model.utils.Word;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.Viterbi.ViterbiSegment;
-import javafx.util.Pair;
+import org.javatuples.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +128,7 @@ public class KeywordExtractor implements NLPExtractor {
                         float contentSimilarity = Distance.cosine(docEmbedding, wordVecs.get(keyword.getWord()));
 
                         similarityFilter = similarFilterList.stream()
-                            .map(pair -> titleSimilarity >= pair.getKey() && contentSimilarity >= pair.getValue())
+                            .map(pair -> titleSimilarity >= pair.getValue0() && contentSimilarity >= pair.getValue1())
                             .reduce((a, b) -> a || b).orElse(false);
                         keyword.setSimilarity((titleSimilarity + contentSimilarity) / 2.0F);
                     }
@@ -183,7 +183,7 @@ public class KeywordExtractor implements NLPExtractor {
                 int cnt = x.getValue().size();
                 return new Pair<>(word, cnt);
             })
-            .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+            .collect(Collectors.toMap(Pair::getValue0, Pair::getValue1));
 
         int tfSum = allWords.size();
 

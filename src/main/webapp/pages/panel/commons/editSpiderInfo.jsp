@@ -380,7 +380,7 @@
                     </div>
                     <div class="form-group">
                         <label for="urlXpath">urlXpath</label>
-                        <input type="text" class="form-control" id="urlXpath" name="urlXpath" placeholder="url链接正则"
+                        <input type="text" class="form-control" id="urlXpath" name="urlXpath" placeholder="url链接Xpath"
                                value="${spiderInfo.urlXpath}">
                     </div>
                     <div class="form-group">

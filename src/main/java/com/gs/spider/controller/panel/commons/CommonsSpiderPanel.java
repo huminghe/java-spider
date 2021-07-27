@@ -141,6 +141,7 @@ public class CommonsSpiderPanel extends BaseController {
                     .setPublishTimeXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getPublishTimeXPath()))
                     .setCategoryXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getCategoryXPath()))
                     .setContentXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getContentXPath()))
+                    .setUrlXpath(StringEscapeUtils.escapeHtml4(spiderInfo.getUrlXpath()))
                     .setTitleXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getTitleXPath()));
             for (SpiderInfo.FieldConfig config : spiderInfo.getDynamicFields()) {
                 config.setRegex(StringEscapeUtils.escapeHtml4(config.getRegex()))
@@ -172,6 +173,7 @@ public class CommonsSpiderPanel extends BaseController {
                 .setPublishTimeXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getPublishTimeXPath()))
                 .setCategoryXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getCategoryXPath()))
                 .setContentXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getContentXPath()))
+                .setUrlXpath(StringEscapeUtils.escapeHtml4(spiderInfo.getUrlXpath()))
                 .setTitleXPath(StringEscapeUtils.escapeHtml4(spiderInfo.getTitleXPath()));
 
         for (SpiderInfo.FieldConfig config : spiderInfo.getDynamicFields()) {
