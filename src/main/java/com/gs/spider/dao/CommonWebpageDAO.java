@@ -304,7 +304,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
     public List<Webpage> searchByQuery(String query, int size, int page) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME)
-                .setQuery(QueryBuilders.queryStringQuery(query).analyzer("hanlp").defaultField("content"))
+                .setQuery(QueryBuilders.queryStringQuery(query).analyzer("hanlp_search").defaultField("content"))
                 .setSize(size).setFrom(size * (page - 1));
         SearchResponse response = searchRequestBuilder.execute().actionGet();
         return warpHits2List(response.getHits());
@@ -546,7 +546,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
         if (StringUtils.isBlank(query)) {
             query = "*";
         }
-        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp").defaultField("contentCleaned");
+        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp_store").defaultField("contentCleaned");
         if (StringUtils.isBlank(domain)) {
             domain = "*";
         } else {
