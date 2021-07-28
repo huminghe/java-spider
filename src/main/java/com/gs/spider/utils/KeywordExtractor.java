@@ -72,7 +72,7 @@ public class KeywordExtractor implements NLPExtractor {
         filterWords = Loader.load("/data/filter.dict");
         feedWords = Loader.load("/data/feed_keyword.dict");
         phrases = Loader.load("/data/phrase.dict");
-        Set<String> entities = Loader.load("/data/entity_names.txt");
+        Set<String> entities = Loader.load("/data/entity_names.txt", 1);
         phrases.addAll(feedWords);
         phrases.addAll(entities);
         matcher = new AhoCorasickMatcher<>(phrases.stream().filter(x -> x.length() >= 2).collect(Collectors.toMap(x -> x, x -> true)));
@@ -101,7 +101,7 @@ public class KeywordExtractor implements NLPExtractor {
 
     @Override
     public List<String> extractKeywords(String title, String content) {
-        List<KeywordResult> keywords = extractKeywords(title, content, 6, 0.25);
+        List<KeywordResult> keywords = extractKeywords(title, content, 8, 0.25);
         return keywords.stream().map(KeywordResult::getWord).collect(Collectors.toList());
     }
 
@@ -132,7 +132,7 @@ public class KeywordExtractor implements NLPExtractor {
                             .reduce((a, b) -> a || b).orElse(false);
                         keyword.setSimilarity((titleSimilarity + contentSimilarity) / 2.0F);
                     }
-                    if ((keyword.isInTitle() && keyword.getWeight() > 0.12) || similarityFilter) {
+                    if ((keyword.isInTitle() && keyword.getWeight() > 0.11) || similarityFilter) {
                         return keyword;
                     } else {
                         return null;
@@ -237,7 +237,7 @@ public class KeywordExtractor implements NLPExtractor {
     }
 
     private Boolean filterByDict(String word) {
-        return allStopwords.contains(word) || filterWords.contains(word) || StringUtils.isNumeric(word);
+        return allStopwords.contains(word) || filterWords.contains(word) || StringUtils.isNumeric(word) || StringUtils.containsAny(word, "0123456789");
     }
 
     private List<Word> candidateWords(String content) {
