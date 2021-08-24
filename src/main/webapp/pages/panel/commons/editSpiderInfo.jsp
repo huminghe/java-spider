@@ -282,11 +282,13 @@
             try {
                 urlList = eval(value);
                 if (urlList.length < 0) return false;
-                $.each(urlList, function (i, item) {
-                    if (item.substring(0, 4) != "http") {
-                        validate = false;
-                    }
-                });
+              /*
+              $.each(urlList, function (i, item) {
+                  if (item.substring(0, 4) != "http") {
+                      validate = false;
+                  }
+              });
+               */
             } catch (e) {
                 return false;
             }

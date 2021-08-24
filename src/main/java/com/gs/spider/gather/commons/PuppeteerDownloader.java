@@ -97,8 +97,7 @@ public class PuppeteerDownloader extends AbstractDownloader {
     @Override
     public Page download(Request request, Task task) {
         if (task != null && task.getSite() != null) {
-            System.out.println(task.toString());
-            System.out.println(request.toString());
+            logger.info("downloading page {}", request.toString());
             Response response = null;
             // Proxy proxy = this.proxyProvider != null ? this.proxyProvider.getProxy(task) : null;
             Page page = new Page();

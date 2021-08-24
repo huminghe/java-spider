@@ -439,6 +439,118 @@ public class CommonSpider extends AsyncGather {
             task.setDescription("处理网页出错，%s", e.toString());
         }
     };
+
+    @SuppressWarnings("unchecked")
+    private final PageConsumer internalFileConsumer = (page, info, task) -> {
+        try {
+            long start = System.currentTimeMillis();
+            String url = page.getUrl().get();
+            //本页是否是startUrls里面的页面
+            final boolean startPage = info.getStartURL().contains(page.getUrl().get());
+            //判断本网站是否只抽取入口页,和当前页面是不是入口页
+            if (!info.isGatherFirstPage() || (info.isGatherFirstPage() && startPage)) {
+                File file = new File(url);
+                File[] fs = file.listFiles();
+                if (fs != null) {
+                    List<String> links = Arrays.stream(fs).filter(Objects::nonNull).map(File::toString)
+                        .filter(f -> !f.equals(url))
+                        .collect(Collectors.toList());
+                    if (links.size() > 0) {
+                        links.forEach(link -> page.addTargetRequest(new Request(link)));
+                    }
+                }
+            }
+            //去掉startUrl页面
+            if (startPage) {
+                page.setSkip(true);
+                return;
+            }
+            if (new File(url).isDirectory()) {
+                page.setSkip(true);
+                return;
+            }
+            page.putField("url", page.getUrl().get());
+            page.putField("domain", info.getDomain());
+            page.putField("spiderInfoId", info.getId());
+            page.putField("gatherTime", new Date());
+            page.putField("spiderInfo", info);
+            page.putField("spiderUUID", task.getTaskId());
+            if (info.isSaveCapture()) {
+                page.putField("rawHTML", page.getHtml().get());
+            }
+            String domainName = domainNameMap.getOrDefault(info.getDomain(), "其他");
+            page.putField("domainName", domainName);
+            int level = info.getLevel();
+            page.putField("level", level);
+
+            //转换静态字段
+            if (info.getStaticFields() != null && info.getStaticFields().size() > 0) {
+                Map<String, String> staticFieldList = Maps.newHashMap();
+                for (SpiderInfo.StaticField staticField : info.getStaticFields()) {
+                    staticFieldList.put(staticField.getName(), staticField.getValue());
+                }
+                page.putField("staticField", staticFieldList);
+            }
+            ///////////////////////////////////////////////////////
+            String content = page.getRawText();
+            page.putField("content", content);
+            if (info.isNeedContent() && StringUtils.isBlank(content)) {//if the content is blank ,skip it!
+                page.setSkip(true);
+                return;
+            }
+            String contentCleaned = Jsoup.parse(content).text();
+            page.putField("contentCleaned", contentCleaned);
+            if (info.isNeedContent() && StringUtils.isBlank(contentCleaned)) {
+                page.setSkip(true);
+                return;
+            }
+            //抽取标题
+            File file = new File(page.getUrl().get());
+            String fileName = file.getName().split("\\.")[0];
+            page.putField("title", fileName.trim());
+            if (info.isNeedTitle() && StringUtils.isBlank(fileName)) {//if the title is blank ,skip it!
+                page.setSkip(true);
+                return;
+            }
+
+
+            //抽取发布时间
+            Date publishTime = new Date();
+            page.putField("publishTime", publishTime);
+            ///////////////////////////////////////////////////////
+            if (info.isDoNLP()) {//判断本网站是否需要进行自然语言处理
+                //进行nlp处理之前先去除标签
+                // content = content.replace("</p>", "***");
+                // content = content.replace("<BR>", "***");
+                // content = content.replaceAll("<([\\s\\S]*?)>", "");
+                // content = content.replace("***", "<br/>");
+                // content = content.replace("\n", "<br/>");
+                // content = content.replaceAll("(\\<br/\\>\\s*){2,}", "<br/> ");
+                // content = content.replaceAll("(&nbsp;\\s*)+", " ");
+                // String contentWithoutHtml = content.replaceAll("<br/>", "");
+                String contentWithoutHtml = contentCleaned;
+                try {
+                    //抽取关键词,10个词
+                    page.putField("keywords", keywordsExtractor.extractKeywords(contentWithoutHtml));
+                    //抽取摘要,5句话
+                    List<String> algoSummary = summaryExtractor.extractSummary(contentWithoutHtml);
+                    page.putField("summary", algoSummary);
+                    page.putField("algoSummary", StringUtils.join(algoSummary, "\n"));
+                    //抽取命名实体
+                    page.putField("namedEntity", namedEntitiesExtractor.extractNamedEntity(contentWithoutHtml));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    LOG.error("对网页进行NLP处理失败,{}", e.getLocalizedMessage());
+                    task.setDescription("对网页进行NLP处理失败,%s", e.getLocalizedMessage());
+                }
+            }
+            //本页面处理时长
+            page.putField("processTime", System.currentTimeMillis() - start);
+        } catch (Exception e) {
+            task.setDescription("处理网页出错，%s", e.toString());
+        }
+    };
+
     private List<Pipeline> pipelineList;
     private CommonWebpagePipeline commonWebpagePipeline;
     private ContentLengthLimitHttpClientDownloader contentLengthLimitHttpClientDownloader;
@@ -749,21 +861,30 @@ public class CommonSpider extends AsyncGather {
      * @return
      */
     private MySpider makeSpider(SpiderInfo info, Task task) {
-        MySpider spider = ((MySpider) new MySpider(new MyPageProcessor(info, task), info)
+        MySpider spider;
+        if (info.getDomain().equals("fileSystem")) {
+            spider = ((MySpider) new MySpider(new InternalFileProcessor(info, task), info)
                 .thread(info.getThread())
                 .setUUID(task.getTaskId()));
-        if (info.isAjaxSite() && StringUtils.isNotBlank(staticValue.getAjaxDownloader())) {
-            List<SpiderListener> spiderListenerList = new ArrayList<>(1);
-
-            //下载器，配置代理
-            ChromiumOptions options = new ChromiumOptions();
-            options.setUseHeadless(true);
-
-            PuppeteerDownloader puppeteerDownloader = new PuppeteerDownloader(spiderListenerList, options);
-            puppeteerDownloader.setChromiumAction(action);
-            spider.setDownloader(puppeteerDownloader);
+            InternalFileDownloader internalFileDownloader = new InternalFileDownloader();
+            spider.setDownloader(internalFileDownloader);
         } else {
-            spider.setDownloader(contentLengthLimitHttpClientDownloader);
+            spider = ((MySpider) new MySpider(new MyPageProcessor(info, task), info)
+                .thread(info.getThread())
+                .setUUID(task.getTaskId()));
+            if (info.isAjaxSite() && StringUtils.isNotBlank(staticValue.getAjaxDownloader())) {
+                List<SpiderListener> spiderListenerList = new ArrayList<>(1);
+
+                //下载器，配置代理
+                ChromiumOptions options = new ChromiumOptions();
+                options.setUseHeadless(true);
+
+                PuppeteerDownloader puppeteerDownloader = new PuppeteerDownloader(spiderListenerList, options);
+                puppeteerDownloader.setChromiumAction(action);
+                spider.setDownloader(puppeteerDownloader);
+            } else {
+                spider.setDownloader(contentLengthLimitHttpClientDownloader);
+            }
         }
         return spider;
     }
@@ -957,5 +1078,42 @@ public class CommonSpider extends AsyncGather {
         public Site getSite() {
             return site;
         }
+    }
+
+    private class InternalFileProcessor implements PageProcessor {
+        private Site site;
+        private SpiderInfo info;
+        private Task task;
+
+        public InternalFileProcessor(SpiderInfo info, Task task) {
+            this.site = Site.me().setDomain(info.getDomain()).setTimeOut(info.getTimeout())
+                .setRetryTimes(info.getRetry()).setSleepTime(info.getSleep())
+                .setCharset(StringUtils.isBlank(info.getCharset()) ? null : info.getCharset())
+                .setUserAgent(info.getUserAgent());
+            //设置抓取代理IP与接口
+            if (StringUtils.isNotBlank(info.getProxyHost()) && info.getProxyPort() > 0) {
+                this.site.setHttpProxy(new HttpHost(info.getProxyHost(), info.getProxyPort()));
+                //设置代理的认证
+                if (StringUtils.isNotBlank(info.getProxyUsername()) && StringUtils.isNotBlank(info.getProxyPassword())) {
+                    this.site.setUsernamePasswordCredentials(new UsernamePasswordCredentials(info.getProxyUsername(), info.getProxyPassword()));
+                }
+            }
+            this.info = info;
+            this.task = task;
+        }
+
+        @Override
+        public void process(Page page) {
+            internalFileConsumer.accept(page, info, task);
+            if (!page.getResultItems().isSkip()) {//网页正常时再增加数量
+                task.increaseCount();
+            }
+        }
+
+        @Override
+        public Site getSite() {
+            return site;
+        }
+
     }
 }
