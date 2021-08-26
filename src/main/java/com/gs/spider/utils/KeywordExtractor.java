@@ -10,6 +10,7 @@ import org.javatuples.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -77,11 +78,7 @@ public class KeywordExtractor implements NLPExtractor {
         phrases.addAll(entities);
         matcher = new AhoCorasickMatcher<>(phrases.stream().filter(x -> x.length() >= 2).collect(Collectors.toMap(x -> x, x -> true)));
         mixIdf = Loader.loadIdf("/data/zword.iwf");
-        String vecsPath = System.getenv("KEYWORD_VECS_PATH");
-        if (StringUtils.isBlank(vecsPath)) {
-            vecsPath = "/Users/huminghe/Documents/tmp/0721/word_vecs_tencent.txt";
-        }
-        wordVecs = Loader.loadWordVecs(vecsPath, 200);
+        wordVecs = Loader.loadWordVecs(StaticValue.wordVectorsPath, 200);
     }
 
     @Override

@@ -14,6 +14,7 @@ import com.gs.spider.model.async.State;
 import com.gs.spider.model.async.Task;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
+import com.gs.spider.utils.Constants;
 import com.gs.spider.utils.Loader;
 import com.gs.spider.utils.NLPExtractor;
 import com.gs.spider.utils.StaticValue;
@@ -158,7 +159,6 @@ public class CommonSpider extends AsyncGather {
     private NLPExtractor keywordsExtractor;
     private NLPExtractor summaryExtractor;
     private NLPExtractor namedEntitiesExtractor;
-    private StaticValue staticValue;
 
     @SuppressWarnings("unchecked")
     private final PageConsumer spiderInfoPageConsumer = (page, info, task) -> {
@@ -217,7 +217,7 @@ public class CommonSpider extends AsyncGather {
                 if (links != null && links.size() > 0) {
                     page.addTargetRequests(links);
                     //仅在debug模式下向任务管理系统存储链接信息
-                    if (staticValue.isCommonsSpiderDebug()) {
+                    if (StaticValue.commonsSpiderDebug) {
                         List<String> urls;
                         if ((urls = ((List<String>) task.getExtraInfoByKey(LINK_KEY))) != null) {
                             urls.addAll(links);
@@ -448,11 +448,13 @@ public class CommonSpider extends AsyncGather {
             //本页是否是startUrls里面的页面
             final boolean startPage = info.getStartURL().contains(page.getUrl().get());
             //判断本网站是否只抽取入口页,和当前页面是不是入口页
+            String path = new File(StaticValue.fileSystemPrefix, url).getPath();
             if (!info.isGatherFirstPage() || (info.isGatherFirstPage() && startPage)) {
-                File file = new File(url);
+                File file = new File(path);
                 File[] fs = file.listFiles();
                 if (fs != null) {
                     List<String> links = Arrays.stream(fs).filter(Objects::nonNull).map(File::toString)
+                        .map(f -> f.replaceAll(StaticValue.fileSystemPrefix, ""))
                         .filter(f -> !f.equals(url))
                         .collect(Collectors.toList());
                     if (links.size() > 0) {
@@ -465,7 +467,7 @@ public class CommonSpider extends AsyncGather {
                 page.setSkip(true);
                 return;
             }
-            if (new File(url).isDirectory()) {
+            if (new File(path).isDirectory()) {
                 page.setSkip(true);
                 return;
             }
@@ -505,7 +507,7 @@ public class CommonSpider extends AsyncGather {
                 return;
             }
             //抽取标题
-            File file = new File(page.getUrl().get());
+            File file = new File(path);
             String fileName = file.getName().split("\\.")[0];
             page.putField("title", fileName.trim());
             if (info.isNeedTitle() && StringUtils.isBlank(fileName)) {//if the title is blank ,skip it!
@@ -559,9 +561,8 @@ public class CommonSpider extends AsyncGather {
     private AbstractChromiumAction action;
 
     @Autowired
-    public CommonSpider(TaskManager taskManager, StaticValue staticValue) throws InterruptedException, BindException {
+    public CommonSpider(TaskManager taskManager) throws InterruptedException, BindException {
         this.taskManager = taskManager;
-        this.staticValue = staticValue;
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -569,8 +570,8 @@ public class CommonSpider extends AsyncGather {
                 deleteAll();
                 LOG.debug("定时删除全部完成的普通网页抓取任务");
             }
-        }, staticValue.getTaskDeleteDelay() * 3600000, staticValue.getTaskDeletePeriod() * 3600000);
-        LOG.debug("定时删除普通网页抓取任务记录线程已启动,延时:{}小时,每{}小时删除一次", staticValue.getTaskDeleteDelay(), staticValue.getTaskDeletePeriod());
+        }, StaticValue.taskDeleteDelay * 3600000, StaticValue.taskDeletePeriod * 3600000);
+        LOG.debug("定时删除普通网页抓取任务记录线程已启动,延时:{}小时,每{}小时删除一次", StaticValue.taskDeleteDelay, StaticValue.taskDeletePeriod);
     }
 
     /**
@@ -650,12 +651,12 @@ public class CommonSpider extends AsyncGather {
             @Override
             public void pushWhenNoDuplicate(Request request, us.codecraft.webmagic.Task task) {
                 int left = getLeftRequestsCount(task);
-                if (left <= staticValue.getLimitOfCommonWebpageDownloadQueue()) {
+                if (left <= StaticValue.limitOfCommonWebpageDownloadQueue) {
                     super.pushWhenNoDuplicate(request, task);
                 }
             }
         };
-        if (staticValue.isNeedEs()) {
+        if (StaticValue.needEs) {
             scheduler.setDuplicateRemover(commonWebpagePipeline);
         }
         MySpider spider = (MySpider) makeSpider(info, task)
@@ -688,7 +689,7 @@ public class CommonSpider extends AsyncGather {
         MySpider spider = (MySpider) makeSpider(info, task)
                 .addPipeline(resultItemsCollectorPipeline)
                 .setScheduler(queueScheduler);
-        if (info.isAjaxSite() && StringUtils.isNotBlank(staticValue.getAjaxDownloader())) {
+        if (info.isAjaxSite() && StringUtils.isNotBlank(StaticValue.ajaxDownloader)) {
             List<SpiderListener> spiderListenerList = new ArrayList<>(1);
 
             //下载器，配置代理
@@ -862,7 +863,7 @@ public class CommonSpider extends AsyncGather {
      */
     private MySpider makeSpider(SpiderInfo info, Task task) {
         MySpider spider;
-        if (info.getDomain().equals("fileSystem")) {
+        if (info.getDomain().equals(Constants.FILESYSTEM)) {
             spider = ((MySpider) new MySpider(new InternalFileProcessor(info, task), info)
                 .thread(info.getThread())
                 .setUUID(task.getTaskId()));
@@ -872,7 +873,7 @@ public class CommonSpider extends AsyncGather {
             spider = ((MySpider) new MySpider(new MyPageProcessor(info, task), info)
                 .thread(info.getThread())
                 .setUUID(task.getTaskId()));
-            if (info.isAjaxSite() && StringUtils.isNotBlank(staticValue.getAjaxDownloader())) {
+            if (info.isAjaxSite() && StringUtils.isNotBlank(StaticValue.ajaxDownloader)) {
                 List<SpiderListener> spiderListenerList = new ArrayList<>(1);
 
                 //下载器，配置代理
@@ -991,7 +992,7 @@ public class CommonSpider extends AsyncGather {
                             (reachMax = (SPIDER_INFO.getMaxPageGather() > 0 && task.getCount() >= SPIDER_INFO.getMaxPageGather()))
                                     ||
                                     //如果抓取页面超过最大抓取数量ratio倍的时候,仍未达到最大抓取数量,爬虫也退出
-                                    (exceedRatio = (this.getPageCount() > SPIDER_INFO.getMaxPageGather() * staticValue.getCommonsWebpageCrawlRatio() && SPIDER_INFO.getMaxPageGather() > 0))
+                                    (exceedRatio = (this.getPageCount() > SPIDER_INFO.getMaxPageGather() * StaticValue.commonsWebpageCrawlRatio && SPIDER_INFO.getMaxPageGather() > 0))
                     )
                             && this.getStatus() == Status.Running) {
                 LOG.info("爬虫ID{}已处理{}个页面,有效页面{}个,最大抓取页数{},reachMax={},exceedRatio={},退出.", this.getUUID(), this.getPageCount(), task.getCount(), SPIDER_INFO.getMaxPageGather(), reachMax, exceedRatio);

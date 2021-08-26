@@ -19,13 +19,12 @@ public class CommonWebpageRedisPipeline implements Pipeline {
     private final Gson gson = new Gson();
     private Logger LOG = LogManager.getLogger(CommonWebpageRedisPipeline.class);
 
-    @Autowired
-    public CommonWebpageRedisPipeline(StaticValue staticValue) {
-        this.needRedis = staticValue.isNeedRedis();
-        this.publishChannelName = staticValue.getWebpageRedisPublishChannelName();
+    public CommonWebpageRedisPipeline() {
+        this.needRedis = StaticValue.needRedis;
+        this.publishChannelName = StaticValue.webpageRedisPublishChannelName;
         if (this.needRedis) {
-            LOG.info("正在初始化Redis客户端,Host:{},Port:{}", staticValue.getRedisHost(), staticValue.getRedisPort());
-            jedis = new Jedis(staticValue.getRedisHost(), staticValue.getRedisPort());
+            LOG.info("正在初始化Redis客户端,Host:{},Port:{}", StaticValue.redisHost, StaticValue.redisPort);
+            jedis = new Jedis(StaticValue.redisHost, StaticValue.redisPort);
             LOG.info("Jedis初始化成功,Clients List:{}", jedis.clientList());
         } else {
             LOG.warn("未初始化Redis客户端");

@@ -1,11 +1,15 @@
 package com.gs.spider.gather.commons;
 
+import com.gs.spider.utils.PdfUtil;
+import com.gs.spider.utils.StaticValue;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.SpiderListener;
@@ -27,6 +31,7 @@ import java.util.stream.Collectors;
  * @author huminghe
  * @date 2021/8/23
  */
+@Component
 public class InternalFileDownloader extends AbstractDownloader {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -68,22 +73,27 @@ public class InternalFileDownloader extends AbstractDownloader {
         if (task != null && task.getSite() != null) {
 
             String url = request.getUrl();
+            String path = new File(StaticValue.fileSystemPrefix, url).getPath();
             InputStream inStream = null;
             logger.info("loading file from: " + url);
             String result = "";
             Page page = new Page();
             try {
-                if (new File(url).isDirectory()) {
+                if (new File(path).isDirectory()) {
                     page = handleResponse(request, "");
                 } else {
-                    inStream = new FileInputStream(url);
+                    File storeFile = new File(StaticValue.internalFileStorePrefix, url);
+                    storeFile.getParentFile().mkdirs();
+                    String storePath = storeFile.getPath();
+                    PdfUtil.removeWatermarkPDF(path, storePath);
+                    inStream = new FileInputStream(storePath);
                     AutoDetectParser autoDetectParser = new AutoDetectParser();
                     BodyContentHandler bodyContentHandler = new BodyContentHandler();
                     Metadata metadata = new Metadata();
                     autoDetectParser.parse(inStream, bodyContentHandler, metadata);
                     result = bodyContentHandler.toString();
                     String[] resultSplited = result.split("\n\n");
-                    List<String> resultList = Arrays.stream(resultSplited).filter(x -> !x.contains("国家电网有限公司高级培训中心 信息技术部"))
+                    List<String> resultList = Arrays.stream(resultSplited)
                         .filter(x -> {
                             Pattern p = Pattern.compile("— [0-9]* —");
                             return !p.matcher(x).find();

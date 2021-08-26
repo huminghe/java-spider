@@ -43,9 +43,6 @@ public class ESClient {
     private Logger logger = LogManager.getLogger(ESClient.class);
     private Client client;
 
-    @Autowired
-    private StaticValue staticValue;
-
     public boolean checkCommonsIndex() {
         return checkIndex(COMMONS_INDEX_NAME, COMMON_INDEX_CONFIG);
     }
@@ -63,18 +60,18 @@ public class ESClient {
     }
 
     public Client getClient() {
-        if (!staticValue.isNeedEs()) {
+        if (!StaticValue.needEs) {
             logger.info("已在配置文件中声明不需要ES,如需要ES,请在配置文件中进行配置");
             return null;
         }
         if (client != null) return client;
-        logger.info("正在初始化ElasticSearch客户端," + staticValue.getEsHost());
+        logger.info("正在初始化ElasticSearch客户端," + StaticValue.esHost);
 
         Settings settings = Settings.builder()
-                .put("cluster.name", staticValue.getEsClusterName()).build();
+                .put("cluster.name", StaticValue.esClusterName).build();
         try {
             client = new PreBuiltTransportClient(settings)
-                    .addTransportAddress(new TransportAddress(InetAddress.getByName(staticValue.getEsHost()), staticValue.getEsPort()));
+                    .addTransportAddress(new TransportAddress(InetAddress.getByName(StaticValue.esHost), StaticValue.esPort));
             final ClusterHealthResponse healthResponse = client.admin().cluster().prepareHealth()
                     .setTimeout(TimeValue.timeValueMinutes(1)).execute().actionGet();
             if (healthResponse.isTimedOut()) {
@@ -158,12 +155,4 @@ public class ESClient {
         return true;
     }
 
-    public StaticValue getStaticValue() {
-        return staticValue;
-    }
-
-    public ESClient setStaticValue(StaticValue staticValue) {
-        this.staticValue = staticValue;
-        return this;
-    }
 }

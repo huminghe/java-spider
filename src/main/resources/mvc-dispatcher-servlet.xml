@@ -28,7 +28,6 @@
         <property name="suffix" value=".jsp"/>
     </bean>
     <bean class="com.gs.spider.gather.commons.CommonSpider" name="commonSpider">
-        <constructor-arg name="staticValue" ref="staticValue"/>
         <constructor-arg name="taskManager" ref="taskManager"/>
         <property name="commonWebpageDAO" ref="commonWebpageDAO"/>
         <property name="spiderInfoDAO" ref="spiderInfoDAO"/>

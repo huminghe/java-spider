@@ -1,6 +1,9 @@
 package com.gs.spider.controller.commons;
 
 import com.gs.spider.controller.BaseController;
+import com.gs.spider.utils.PdfUtil;
+import com.gs.spider.utils.StaticValue;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Controller;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,8 +33,12 @@ public class FileController extends BaseController {
         OutputStream os = null;
         try {
             String path = request.getParameter("filePath");
+            path = new File(StaticValue.internalFileStorePrefix, path).getPath();
+
+            String tmpPath = path + RandomStringUtils.randomAlphabetic(10);
+            PdfUtil.watermarkPDF(path, tmpPath);
             response.setContentType("application/pdf");
-            bis = new FileInputStream(path);
+            bis = new FileInputStream(tmpPath);
             os = response.getOutputStream();
             int count = 0;
             byte[] buffer = new byte[1024 * 1024];
@@ -38,6 +46,7 @@ public class FileController extends BaseController {
                 os.write(buffer, 0, count);
             }
             os.flush();
+            new File(tmpPath).delete();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -37,8 +37,6 @@ public class ContentLengthLimitHttpClientDownloader extends HttpClientDownloader
     private final static Logger LOG = LogManager.getLogger(ContentLengthLimitHttpClientDownloader.class);
     private final Map<String, CloseableHttpClient> httpClients = new HashMap<String, CloseableHttpClient>();
     private HttpClientGenerator httpClientGenerator = new HttpClientGenerator();
-    @Autowired
-    private StaticValue staticValue;
 
     @Override
     protected String getContent(String charset, HttpResponse httpResponse) throws IOException {
@@ -46,8 +44,8 @@ public class ContentLengthLimitHttpClientDownloader extends HttpClientDownloader
             long contentLength = httpResponse.getEntity().getContentLength();
             if (httpResponse.getFirstHeader("Content-Type") != null && !httpResponse.getFirstHeader("Content-Type").getValue().toLowerCase().contains("text/html")) {
                 throw new IllegalArgumentException("本链接为非HTML内容,不下载,内容类型为:" + httpResponse.getFirstHeader("Content-Type"));
-            } else if (contentLength > staticValue.getMaxHttpDownloadLength()) {
-                throw new IllegalArgumentException("HTTP内容长度超过限制,实际大小为:" + contentLength + ",限制最大值为:" + staticValue.getMaxHttpDownloadLength());
+            } else if (contentLength > StaticValue.maxHttpDownloadLength) {
+                throw new IllegalArgumentException("HTTP内容长度超过限制,实际大小为:" + contentLength + ",限制最大值为:" + StaticValue.maxHttpDownloadLength);
             }
             byte[] contentBytes = IOUtils.toByteArray(httpResponse.getEntity().getContent());
             String htmlCharset = getHtmlCharset(httpResponse, contentBytes);
@@ -160,7 +158,7 @@ public class ContentLengthLimitHttpClientDownloader extends HttpClientDownloader
     }
 
     private void writeExceptionLog(Exception e, Request request) {
-        if (staticValue.isCommonsSpiderDebug()) {
+        if (StaticValue.commonsSpiderDebug) {
             StringWriter stringWriter = new StringWriter();
             PrintWriter printWriter = new PrintWriter(stringWriter);
             e.printStackTrace(printWriter);
