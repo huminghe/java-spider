@@ -17,6 +17,6 @@
   "ajaxDownloader": "http://localhost:7788/",
   "fileSystemPrefix": "/home/atc/lg/files/upload",
   "internalFileStorePrefix": "/home/atc/lg/files/store",
-  "pdfFontPath": "/data/atc/lg/data/msyh.ttf",
+  "pdfFontPath": "/home/atc/lg/data/msyh.ttf",
   "wordVectorsPath": "/home/atc/lg/data/word_vecs_tencent.txt"
 }
