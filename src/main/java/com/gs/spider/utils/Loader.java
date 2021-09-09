@@ -75,7 +75,7 @@ public class Loader {
                 try {
                     String[] pieces = line.split("\t");
                     String word = pieces[0];
-                    float idf = Float.parseFloat(pieces[1]);
+                    float idf = Float.parseFloat(pieces[2]);
                     result.put(word, idf);
                 } catch (Exception ex) {
                     LOG.error("parse line error: " + line, ex);

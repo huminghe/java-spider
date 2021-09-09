@@ -3,12 +3,8 @@ package com.gs.spider.gather.commons;
 import com.gs.spider.utils.PdfUtil;
 import com.gs.spider.utils.StaticValue;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Request;
@@ -18,9 +14,7 @@ import us.codecraft.webmagic.downloader.AbstractDownloader;
 import us.codecraft.webmagic.selector.PlainText;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -71,10 +65,8 @@ public class InternalFileDownloader extends AbstractDownloader {
     @Override
     public Page download(Request request, Task task) {
         if (task != null && task.getSite() != null) {
-
             String url = request.getUrl();
             String path = new File(StaticValue.fileSystemPrefix, url).getPath();
-            InputStream inStream = null;
             logger.info("loading file from: " + url);
             String result = "";
             Page page = new Page();
@@ -86,18 +78,19 @@ public class InternalFileDownloader extends AbstractDownloader {
                     storeFile.getParentFile().mkdirs();
                     String storePath = storeFile.getPath();
                     PdfUtil.removeWatermarkPDF(path, storePath);
-                    inStream = new FileInputStream(storePath);
-                    AutoDetectParser autoDetectParser = new AutoDetectParser();
-                    BodyContentHandler bodyContentHandler = new BodyContentHandler();
-                    Metadata metadata = new Metadata();
-                    autoDetectParser.parse(inStream, bodyContentHandler, metadata);
-                    result = bodyContentHandler.toString();
+                    boolean needOCR = PdfUtil.needOCR(storePath);
+                    if (needOCR) {
+                        result = PdfUtil.fetchContentByOCR(storePath);
+                    } else {
+                        result = PdfUtil.fetchContentByTika(storePath);
+                    }
                     String[] resultSplited = result.split("\n\n");
                     List<String> resultList = Arrays.stream(resultSplited)
                         .filter(x -> {
                             Pattern p = Pattern.compile("— [0-9]* —");
                             return !p.matcher(x).find();
                         })
+                        .map(line -> line.replaceAll(" ", ""))
                         .collect(Collectors.toList());
 
                     StringBuilder sb = new StringBuilder();
@@ -118,14 +111,6 @@ public class InternalFileDownloader extends AbstractDownloader {
             } catch (Exception ex) {
                 this.onError(request);
                 this.logger.warn("download page error {},{}", request.getUrl(), ex);
-            } finally {
-                try {
-                    if (inStream != null) {
-                        inStream.close();
-                    }
-                } catch (Exception e) {
-                    logger.error("failed to close file: " + url, e);
-                }
             }
             return page;
         } else {

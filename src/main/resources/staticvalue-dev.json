@@ -1,0 +1,23 @@
+{
+  "esHost": "127.0.0.1",
+  "esPort": 9300,
+  "esClusterName": "elasticsearch",
+  "commonsIndex": "commonsv2",
+  "maxHttpDownloadLength": 1048576,
+  "commonsSpiderDebug": true,
+  "taskDeleteDelay": 1,
+  "taskDeletePeriod": 2,
+  "limitOfCommonWebpageDownloadQueue": 100000,
+  "needRedis": false,
+  "needEs": true,
+  "redisPort": 6379,
+  "redisHost": "127.0.0.1",
+  "webpageRedisPublishChannelName": "webpage",
+  "commonsWebpageCrawlRatio": 2,
+  "ajaxDownloader": "http://localhost:7788/",
+  "fileSystemPrefix": "/data/huminghe/stategrid/tmp",
+  "internalFileStorePrefix": "/data/huminghe/stategrid/store",
+  "pdfFontPath": "/data/huminghe/stategrid/msyh.ttf",
+  "wordVectorsPath": "/data/huminghe/stategrid/word_vecs_tencent.txt",
+  "ocrApi": "http://0.0.0.0:5000/api/v1/ocr"
+}

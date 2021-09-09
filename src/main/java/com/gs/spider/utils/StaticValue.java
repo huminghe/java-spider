@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,12 +51,18 @@ public class StaticValue {
     public static String internalFileStorePrefix;
     public static String pdfFontPath;
     public static String wordVectorsPath;
+    public static String ocrApi;
 
     static {
         LOG.debug("正在初始化StaticValue");
         try {
+            String env = System.getenv("SPIDER_ENV");
+            if (StringUtils.isBlank(env)) {
+                env = "local";
+            }
+            String configPath = String.format("staticvalue-%s.json", env);
             String json = FileUtils.readFileToString(new File(StaticValue.class.getClassLoader()
-                .getResource("staticvalue.json").getFile()));
+                .getResource(configPath).getFile()));
             JsonParser jsonParser = new JsonParser();
             JsonElement jsonElement = jsonParser.parse(json);
             JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -79,6 +86,7 @@ public class StaticValue {
             internalFileStorePrefix = jsonObject.get("internalFileStorePrefix").getAsString();
             pdfFontPath = jsonObject.get("pdfFontPath").getAsString();
             wordVectorsPath = jsonObject.get("wordVectorsPath").getAsString();
+            ocrApi = jsonObject.get("ocrApi").getAsString();
             LOG.debug("StaticValue初始化成功");
         } catch (IOException e) {
             LOG.fatal("初始化StaticValue失败," + e.getLocalizedMessage());

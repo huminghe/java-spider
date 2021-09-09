@@ -418,7 +418,7 @@ public class CommonSpider extends AsyncGather {
                 String contentWithoutHtml = contentCleaned;
                 try {
                     //抽取关键词,10个词
-                    page.putField("keywords", keywordsExtractor.extractKeywords(contentWithoutHtml));
+                    page.putField("keywords", keywordsExtractor.extractKeywords(title, contentWithoutHtml));
                     //抽取摘要,5句话
                     List<String> algoSummary = summaryExtractor.extractSummary(contentWithoutHtml);
                     if (strongList.isEmpty()) {
@@ -533,7 +533,7 @@ public class CommonSpider extends AsyncGather {
                 String contentWithoutHtml = contentCleaned;
                 try {
                     //抽取关键词,10个词
-                    page.putField("keywords", keywordsExtractor.extractKeywords(contentWithoutHtml));
+                    page.putField("keywords", keywordsExtractor.extractKeywords(fileName.trim(), contentWithoutHtml));
                     //抽取摘要,5句话
                     List<String> algoSummary = summaryExtractor.extractSummary(contentWithoutHtml);
                     page.putField("summary", algoSummary);

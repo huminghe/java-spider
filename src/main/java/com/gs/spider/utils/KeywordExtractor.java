@@ -10,7 +10,6 @@ import org.javatuples.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -42,11 +41,15 @@ public class KeywordExtractor implements NLPExtractor {
         add("nz");
         add("cb");
     }};
+    private static Set<String> IMPORTANT_NOUN = new HashSet<String>() {{
+        add("nr");
+        add("cb");
+    }};
     private static Set<String> VERB = new HashSet<String>() {{
         add("v");
         add("vn");
     }};
-    private static float DEFAULT_IDF = 8.0F;
+    private static float DEFAULT_IDF = 6.0F;
 
     private List<Pair<Float, Float>> similarFilterList = new LinkedList<>();
 
@@ -63,6 +66,7 @@ public class KeywordExtractor implements NLPExtractor {
     private Set<String> filterWords;
     private Set<String> feedWords;
     private Set<String> phrases;
+    private Set<String> gridKeywords;
     private AhoCorasickMatcher<Boolean> matcher;
 
     private Map<String, Float> mixIdf;
@@ -73,11 +77,13 @@ public class KeywordExtractor implements NLPExtractor {
         filterWords = Loader.load("/data/filter.dict");
         feedWords = Loader.load("/data/feed_keyword.dict");
         phrases = Loader.load("/data/phrase.dict");
+        gridKeywords = Loader.load("/data/grid_keyword.txt");
         Set<String> entities = Loader.load("/data/entity_names.txt", 1);
         phrases.addAll(feedWords);
         phrases.addAll(entities);
+        phrases.addAll(gridKeywords);
         matcher = new AhoCorasickMatcher<>(phrases.stream().filter(x -> x.length() >= 2).collect(Collectors.toMap(x -> x, x -> true)));
-        mixIdf = Loader.loadIdf("/data/zword.iwf");
+        mixIdf = Loader.loadIdf("/data/zhihu_core_coarse.dict");
         wordVecs = Loader.loadWordVecs(StaticValue.wordVectorsPath, 200);
     }
 
@@ -98,7 +104,7 @@ public class KeywordExtractor implements NLPExtractor {
 
     @Override
     public List<String> extractKeywords(String title, String content) {
-        List<KeywordResult> keywords = extractKeywords(title, content, 8, 0.25);
+        List<KeywordResult> keywords = extractKeywords(title, content, 8, 0.15);
         return keywords.stream().map(KeywordResult::getWord).collect(Collectors.toList());
     }
 
@@ -117,7 +123,7 @@ public class KeywordExtractor implements NLPExtractor {
             float[] docEmbedding = Distance.wordsToVector(words, wordVecs);
 
             result = baseKeywords.stream()
-                .filter(keyword -> keyword.isInTitle() || keyword.getFrequency() >= 2)
+                .filter(keyword -> keyword.isInTitle() || keyword.getFrequency() >= 2 || keyword.getWeight() > 0.4)
                 .map(keyword -> {
                     boolean similarityFilter = false;
                     if (wordVecs.containsKey(keyword.getWord())) {
@@ -129,22 +135,14 @@ public class KeywordExtractor implements NLPExtractor {
                             .reduce((a, b) -> a || b).orElse(false);
                         keyword.setSimilarity((titleSimilarity + contentSimilarity) / 2.0F);
                     }
-                    if ((keyword.isInTitle() && keyword.getWeight() > 0.11) || similarityFilter) {
+                    if (keyword.getWeight() > 0.4 || (keyword.isInTitle() && keyword.getWeight() > 0.11) || similarityFilter) {
                         return keyword;
                     } else {
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
-                .sorted((k1, k2) -> {
-                    if (k1.isInTitle() && !k2.isInTitle()) {
-                        return -1;
-                    } else if (!k1.isInTitle() && k2.isInTitle()) {
-                        return 1;
-                    } else {
-                        return -Float.compare(k1.getSimilarity(), k2.getSimilarity());
-                    }
-                })
+                .sorted((k1, k2) -> -Double.compare(k1.getSimilarity() + k1.getWeight() * 2, k2.getSimilarity() + k2.getWeight() * 2))
                 .collect(Collectors.toList());
         } else {
             result = baseKeywords;
@@ -188,28 +186,38 @@ public class KeywordExtractor implements NLPExtractor {
             .filter(wordObj -> phrases.contains(wordObj.getWord()) && !filterByDict(wordObj.getWord()))
             .map(wordObj -> {
                 double tf = wordFreq.getOrDefault(wordObj.getWord(), 0) * 1.0 / (tfSum + 1.0);
+                tf = Math.min(tf, 0.06);
                 double idf = mixIdf.getOrDefault(wordObj.getWord(), DEFAULT_IDF);
-                double tfidf = tf * idf;
+                double tfidf = tf * Math.pow(idf, 3.0) / 30;
 
                 double titleScore = 0;
                 if (titleWordSet.contains(wordObj.getWord()) && wordObj.getLen() > 0) {
-                    if (NOUN.contains(wordObj.getPosTag())) {
-                        titleScore = Math.min(3, wordObj.getLen() - 1) * 0.2;
+                    if (IMPORTANT_NOUN.contains(wordObj.getPosTag())) {
+                        titleScore = 0.8;
+                    } else if (NOUN.contains(wordObj.getWord()) && wordObj.getLen() > 0) {
+                        titleScore = Math.min(2, wordObj.getLen() - 1) * 0.2;
                     } else {
-                        titleScore = Math.min(4.5, wordObj.getLen() - 1) * 0.1;
+                        titleScore = Math.min(3.5, wordObj.getLen() - 1) * 0.1;
                     }
                 }
 
                 double lenScore = wordObj.getLen() * 1.0 / (wordObj.getLen() + 4);
 
                 double speechScore = 0;
-                if (NOUN.contains(wordObj.getPosTag())) {
+                if (IMPORTANT_NOUN.contains(wordObj.getPosTag())) {
                     speechScore = 0.6;
+                } else if (NOUN.contains(wordObj.getPosTag())) {
+                    speechScore = 0.15;
                 } else if (VERB.contains(wordObj.getPosTag())) {
-                    speechScore = 0.2;
+                    speechScore = 0.1;
                 }
 
-                double weight = tfidf * 0.7 + titleScore * 0.2 + lenScore * 0.05 + speechScore * 0.05;
+                double gridKeywordsScore = 0;
+                if (gridKeywords.contains(wordObj.getWord())) {
+                    gridKeywordsScore = 1;
+                }
+
+                double weight = tfidf * 0.7 + titleScore * 0.15 + lenScore * 0.06 + speechScore * 0.06 + gridKeywordsScore * 0.4;
 
                 return new KeywordRaw(wordObj.getWord(), weight);
             })
@@ -234,7 +242,7 @@ public class KeywordExtractor implements NLPExtractor {
     }
 
     private Boolean filterByDict(String word) {
-        return allStopwords.contains(word) || filterWords.contains(word) || StringUtils.isNumeric(word) || StringUtils.containsAny(word, "0123456789");
+        return allStopwords.contains(word) || filterWords.contains(word) || StringUtils.isNumeric(word) || StringUtils.containsAny(word, "0123456789") || word.length() <= 1;
     }
 
     private List<Word> candidateWords(String content) {
