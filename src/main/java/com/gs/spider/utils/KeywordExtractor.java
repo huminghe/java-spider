@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -118,7 +119,7 @@ public class KeywordExtractor implements NLPExtractor {
 
     @Override
     public List<String> extractKeywords(String title, String content) {
-        List<KeywordResult> keywords = extractKeywords(title, content, 8, 0.15);
+        List<KeywordResult> keywords = extractKeywords(title, content, 8, 0.2);
         return keywords.stream().map(KeywordResult::getWord).collect(Collectors.toList());
     }
 
@@ -156,7 +157,7 @@ public class KeywordExtractor implements NLPExtractor {
                     }
                 })
                 .filter(Objects::nonNull)
-                .sorted((k1, k2) -> -Double.compare(k1.getSimilarity() + k1.getWeight() * 2, k2.getSimilarity() + k2.getWeight() * 2))
+                .sorted(Comparator.comparingDouble(k -> -k.getWeight() * 3 - k.getSimilarity()))
                 .collect(Collectors.toList());
         } else {
             result = baseKeywords;
