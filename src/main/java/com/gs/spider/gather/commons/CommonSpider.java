@@ -255,19 +255,10 @@ public class CommonSpider extends AsyncGather {
             }
             ///////////////////////////////////////////////////////
             String content;
-            List<String> strongList = Lists.newLinkedList();
             if (!StringUtils.isBlank(info.getContentXPath())) {//如果有正文的XPath的话优先使用XPath
                 StringBuilder buffer = new StringBuilder();
                 page.getHtml().xpath(info.getContentXPath()).all().forEach(buffer::append);
                 content = buffer.toString();
-
-                String strongContentXPath = info.getContentXPath() + "//strong";
-                page.getHtml().xpath(strongContentXPath).all().forEach(x -> {
-                    if (!x.contains("作者") && !x.contains("记者")) {
-                        strongList.add(Jsoup.parse(x).text());
-                    }
-                });
-                page.putField("summary", strongList);
             } else if (!StringUtils.isBlank(info.getContentReg())) {//没有正文XPath
                 StringBuilder buffer = new StringBuilder();
                 page.getHtml().regex(info.getContentReg()).all().forEach(buffer::append);
@@ -421,9 +412,7 @@ public class CommonSpider extends AsyncGather {
                     page.putField("keywords", keywordsExtractor.extractKeywords(title, contentWithoutHtml));
                     //抽取摘要,5句话
                     List<String> algoSummary = summaryExtractor.extractSummary(contentWithoutHtml);
-                    if (strongList.isEmpty()) {
-                        page.putField("summary", algoSummary);
-                    }
+                    page.putField("summary", algoSummary);
                     page.putField("algoSummary", StringUtils.join(algoSummary, "\n"));
                     //抽取命名实体
                     page.putField("namedEntity", namedEntitiesExtractor.extractNamedEntity(contentWithoutHtml));

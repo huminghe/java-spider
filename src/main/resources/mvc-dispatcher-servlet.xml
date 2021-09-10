@@ -34,7 +34,7 @@
         <property name="commonWebpagePipeline" ref="commonWebpagePipeline"/>
         <property name="contentLengthLimitHttpClientDownloader" ref="contentLengthLimitHttpClientDownloader"/>
         <property name="keywordsExtractor" ref="keywordExtractor"/>
-        <property name="summaryExtractor" ref="HANLPExtractor"/>
+        <property name="summaryExtractor" ref="keywordExtractor"/>
         <property name="namedEntitiesExtractor" ref="HANLPExtractor"/>
         <property name="action" ref="puppeAction"/>
         <!--普通网页爬虫数据输出管道配置-->

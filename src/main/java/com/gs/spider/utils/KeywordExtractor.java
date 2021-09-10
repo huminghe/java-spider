@@ -72,6 +72,9 @@ public class KeywordExtractor implements NLPExtractor {
     private Map<String, Float> mixIdf;
     private Map<String, float[]> wordVecs;
 
+    private Set<String> summaryWords;
+    private AhoCorasickMatcher<Boolean> summaryMatcher;
+
     {
         allStopwords = Loader.load("/data/all.stopwords");
         filterWords = Loader.load("/data/filter.dict");
@@ -85,6 +88,9 @@ public class KeywordExtractor implements NLPExtractor {
         matcher = new AhoCorasickMatcher<>(phrases.stream().filter(x -> x.length() >= 2).collect(Collectors.toMap(x -> x, x -> true)));
         mixIdf = Loader.loadIdf("/data/zhihu_core_coarse.dict");
         wordVecs = Loader.loadWordVecs(StaticValue.wordVectorsPath, 200);
+
+        summaryWords = Loader.load("/data/summary_words.txt");
+        summaryMatcher = new AhoCorasickMatcher<>(summaryWords.stream().collect(Collectors.toMap(x -> x, x -> true)));
     }
 
     @Override
@@ -94,7 +100,15 @@ public class KeywordExtractor implements NLPExtractor {
 
     @Override
     public List<String> extractSummary(String content) {
-        return null;
+        List<String> sentences = NlpUtil.toSentence(content);
+        return sentences.stream()
+            .filter(x -> {
+                boolean matchSummaryWords = !summaryMatcher.matching(x, false).isEmpty();
+                boolean noTime = !x.contains("发布时间");
+                return matchSummaryWords && noTime;
+            })
+            .limit(6)
+            .collect(Collectors.toList());
     }
 
     @Override
