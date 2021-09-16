@@ -23,6 +23,7 @@ public class NlpUtil {
         add('\r');
         add('\b');
         add(' ');
+        add('\u00A0');
     }};
 
     private static Set<Character> sentenceEndNextChars = new HashSet<Character>() {{
@@ -44,6 +45,7 @@ public class NlpUtil {
         add('‘');
         add('’');
         add(' ');
+        add('\u00A0');
     }};
 
     public static List<String> toSentence(String text) {

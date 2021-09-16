@@ -3,9 +3,11 @@ package com.gs.spider.utils;
 import com.gs.spider.model.utils.KeywordRaw;
 import com.gs.spider.model.utils.KeywordResult;
 import com.gs.spider.model.utils.MatchHit;
+import com.gs.spider.model.utils.Sentence;
 import com.gs.spider.model.utils.Word;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.Viterbi.ViterbiSegment;
+import com.hankcs.hanlp.seg.common.Term;
 import org.javatuples.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -31,9 +34,9 @@ public class KeywordExtractor implements NLPExtractor {
 
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
-    private static Segment hanlpSegment = new ViterbiSegment().enableOffset(true).enablePlaceRecognize(true);
+    private static final Segment hanlpSegment = new ViterbiSegment().enableOffset(true).enablePlaceRecognize(true);
 
-    private static Set<String> NOUN = new HashSet<String>() {{
+    private static final Set<String> NOUN = new HashSet<String>() {{
         add("n");
         add("an");
         add("nr");
@@ -42,17 +45,19 @@ public class KeywordExtractor implements NLPExtractor {
         add("nz");
         add("cb");
     }};
-    private static Set<String> IMPORTANT_NOUN = new HashSet<String>() {{
+    private static final Set<String> IMPORTANT_NOUN = new HashSet<String>() {{
         add("nr");
         add("cb");
     }};
-    private static Set<String> VERB = new HashSet<String>() {{
+    private static final Set<String> VERB = new HashSet<String>() {{
         add("v");
         add("vn");
     }};
-    private static float DEFAULT_IDF = 6.0F;
+    private static final float DEFAULT_IDF = 6.0F;
 
-    private List<Pair<Float, Float>> similarFilterList = new LinkedList<>();
+    private static final Pattern NUM_PREFIX_PATTERN = Pattern.compile("(^[(（]?[0-9]+[)）.、]( )?)|(^[(（][一二三四五六七八九十]+[)）.、]( )?)");
+
+    private final List<Pair<Float, Float>> similarFilterList = new LinkedList<>();
 
     {
         similarFilterList.add(new Pair<>(0.0F, 0.5F));
@@ -63,23 +68,21 @@ public class KeywordExtractor implements NLPExtractor {
         similarFilterList.add(new Pair<>(0.8F, 0.0F));
     }
 
-    private Set<String> allStopwords;
-    private Set<String> filterWords;
-    private Set<String> feedWords;
-    private Set<String> phrases;
-    private Set<String> gridKeywords;
-    private AhoCorasickMatcher<Boolean> matcher;
+    private final Set<String> allStopwords;
+    private final Set<String> filterWords;
+    private final Set<String> phrases;
+    private final Set<String> gridKeywords;
+    private final AhoCorasickMatcher<Boolean> matcher;
 
-    private Map<String, Float> mixIdf;
-    private Map<String, float[]> wordVecs;
+    private final Map<String, Float> mixIdf;
+    private final Map<String, float[]> wordVecs;
 
-    private Set<String> summaryWords;
-    private AhoCorasickMatcher<Boolean> summaryMatcher;
+    private final AhoCorasickMatcher<Boolean> summaryMatcher;
 
     {
         allStopwords = Loader.load("/data/all.stopwords");
         filterWords = Loader.load("/data/filter.dict");
-        feedWords = Loader.load("/data/feed_keyword.dict");
+        Set<String> feedWords = Loader.load("/data/feed_keyword.dict");
         phrases = Loader.load("/data/phrase.dict");
         gridKeywords = Loader.load("/data/grid_keyword.txt");
         Set<String> entities = Loader.load("/data/entity_names.txt", 1);
@@ -90,7 +93,7 @@ public class KeywordExtractor implements NLPExtractor {
         mixIdf = Loader.loadIdf("/data/zhihu_core_coarse.dict");
         wordVecs = Loader.loadWordVecs(StaticValue.wordVectorsPath, 200);
 
-        summaryWords = Loader.load("/data/summary_words.txt");
+        Set<String> summaryWords = Loader.load("/data/summary_words.txt");
         summaryMatcher = new AhoCorasickMatcher<>(summaryWords.stream().collect(Collectors.toMap(x -> x, x -> true)));
     }
 
@@ -101,14 +104,12 @@ public class KeywordExtractor implements NLPExtractor {
 
     @Override
     public List<String> extractSummary(String content) {
-        List<String> sentences = NlpUtil.toSentence(content);
-        return sentences.stream()
-            .filter(x -> {
-                boolean matchSummaryWords = !summaryMatcher.matching(x, false).isEmpty();
-                boolean noTime = !x.contains("发布时间");
-                return matchSummaryWords && noTime;
-            })
-            .limit(6)
+        List<String> candidateSentences = generateCandidateSentences(content);
+        List<Sentence> summarySentences = generateSummarySentences(candidateSentences);
+        return summarySentences.stream().limit(6)
+            .sorted(Comparator.comparingInt(Sentence::getIdx))
+            .map(Sentence::getSentence)
+            .map(this::removeNumPrefix)
             .collect(Collectors.toList());
     }
 
@@ -299,6 +300,133 @@ public class KeywordExtractor implements NLPExtractor {
             }
         }
         return candidateWords;
+    }
+
+    private List<String> generateCandidateSentences(String content) {
+        List<String> sentences = NlpUtil.toSentence(content);
+        List<String> candidateSentences = sentences.stream()
+            .filter(x -> {
+                boolean matchSummaryWords = !summaryMatcher.matching(x, false).isEmpty();
+                boolean noTime = !x.contains("发布时间");
+                boolean noFujian = !x.contains("附件");
+                boolean noNeibu = !x.contains("内部事项");
+                return matchSummaryWords && noTime && noFujian && noNeibu;
+            })
+            .collect(Collectors.toList());
+        return candidateSentences;
+    }
+
+    private List<Sentence> generateSummarySentences(List<String> sentences) {
+        float[][] textGraph = generateTextGraph(sentences);
+        float[] sentenceScores = calculateScoreByTextRank(textGraph);
+        int idx = 0;
+        List<Sentence> sentenceList = new LinkedList<>();
+        for (float score : sentenceScores) {
+            String sentence = sentences.get(idx);
+            Sentence s = new Sentence(sentence, idx, score);
+            sentenceList.add(s);
+            idx++;
+        }
+        return sentenceList.stream().sorted((a, b) -> Float.compare(b.getScore(), a.getScore()))
+            .collect(Collectors.toList());
+    }
+
+    private float[] calculateScoreByTextRank(float[][] textGraph) {
+        return calculateScoreByTextRank(textGraph, 20, 0.6f, 0.002f);
+    }
+
+    private float[] calculateScoreByTextRank(float[][] textGraph, int iterNums, float dampingFactor, float minDiff) {
+        int sentenceNums = textGraph.length;
+        float[] weightSum = new float[sentenceNums];
+        float initialSentenceScore = sentenceNums != 0 ? 1f / sentenceNums : 1f;
+        float[] sentenceScores = new float[sentenceNums];
+        for (int i = 0; i < sentenceNums; i++) {
+            sentenceScores[i] = initialSentenceScore;
+        }
+        float scoreDiff = Float.MAX_VALUE;
+        int epoch = 0;
+
+        for (int i = 0; i < sentenceNums; i++) {
+            float sum = 0;
+            for (int j = 0; j < textGraph[i].length; j++) {
+                sum += textGraph[i][j];
+            }
+            weightSum[i] = sum;
+        }
+
+        while (scoreDiff >= minDiff && epoch <= iterNums) {
+            float[] sentenceScoreTemp = new float[sentenceNums];
+            for (int i = 0; i < sentenceNums; i++) {
+                sentenceScoreTemp[i] = 0;
+            }
+            scoreDiff = 0;
+            for (int i = 0; i < sentenceNums; i++) {
+                for (int j = 0; j < sentenceNums; j++) {
+                    if (weightSum[j] != 0) {
+                        sentenceScoreTemp[i] += textGraph[i][j] / weightSum[j] * sentenceScores[j];
+                    }
+                }
+                sentenceScoreTemp[i] = sentenceScoreTemp[i] * dampingFactor + sentenceScores[i] * (1 - dampingFactor);
+                float diff = Math.abs(sentenceScoreTemp[i] - sentenceScores[i]);
+                scoreDiff = Math.max(diff, scoreDiff);
+            }
+
+            sentenceScores = sentenceScoreTemp;
+            epoch += 1;
+        }
+        return sentenceScores;
+    }
+
+    private float[][] generateTextGraph(List<String> sentences) {
+        int length = sentences.size();
+        float[][] textGraph = new float[length][length];
+        List<Map<String, Integer>> tfScores = sentences.stream().map(this::countsTf).collect(Collectors.toList());
+
+        for (int i = 0; i < length; i++) {
+            for (int j = i; j < length; j++) {
+                Map<String, Integer> tfMap1 = tfScores.get(i);
+                Map<String, Integer> tfMap2 = tfScores.get(j);
+                float similarity = 0;
+                if (i != j) {
+                    similarity = (float) calculateModifiedTfIdfScore(tfMap1, tfMap2);
+                }
+                textGraph[i][j] = similarity;
+                textGraph[j][i] = similarity;
+            }
+        }
+        return textGraph;
+    }
+
+    private Map<String, Integer> countsTf(String sentence) {
+        List<Term> words = hanlpSegment.seg(sentence);
+        return words.stream().map(term -> term.word)
+            .collect(Collectors.groupingBy(x -> x))
+            .entrySet()
+            .stream().map(x -> {
+                String word = x.getKey();
+                int cnt = x.getValue().size();
+                return new Pair<>(word, cnt);
+            })
+            .collect(Collectors.toMap(Pair::getValue0, Pair::getValue1));
+    }
+
+    private double calculateModifiedTfIdfScore(Map<String, Integer> tfMap1, Map<String, Integer> tfMap2) {
+        Set<String> wordSet = new HashSet<>(tfMap1.keySet());
+        wordSet.addAll(tfMap2.keySet());
+        return wordSet.stream().map(word -> {
+            double score = 0;
+            if (mixIdf.containsKey(word)) {
+                int tf1 = tfMap1.getOrDefault(word, 0);
+                int tf2 = tfMap2.getOrDefault(word, 0);
+                float idf = mixIdf.getOrDefault(word, DEFAULT_IDF);
+                score = tf1 * tf2 * Math.pow(idf, 2);
+            }
+            return score;
+        }).mapToDouble(x -> x).average().orElse(0);
+    }
+
+    private String removeNumPrefix(String sentence) {
+        return NUM_PREFIX_PATTERN.matcher(sentence).replaceFirst("");
     }
 
 }

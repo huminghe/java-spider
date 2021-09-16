@@ -180,6 +180,7 @@ public class PdfUtil {
                 ImageIO.write(image, "png", dstFile);
                 String picInfo = doOCRFromFile(imgPath);
                 sb.append(picInfo);
+                sb.append("\n");
                 dstFile.delete();
             }
         } catch (Exception e) {

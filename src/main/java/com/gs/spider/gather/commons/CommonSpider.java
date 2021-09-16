@@ -69,45 +69,45 @@ public class CommonSpider extends AsyncGather {
     private static LinkedList<Pair<String, SimpleDateFormat>> datePattern = Lists.newLinkedList();
 
     private static final String HTML_PREFIX = "<!DOCTYPE html>\n" +
-            "<html lang=\"en\">\n" +
-            "    <head>\n" +
-            "        <meta name=\"apple-mobile-web-app-capable\" content=\"yes\"></meta>\n" +
-            "        <meta http-equiv=\"Cache-Control\" name=\"no-store\"></meta>\n" +
-            "        <meta content=\"telephone=no\" name=\"format-detection\"></meta>\n" +
-            "        <meta content=\"email=no\" name=\"format-detection\"></meta>\n" +
-            "        <meta charset=\"utf-8\"></meta>\n" +
-            "        <meta name=\"viewport\" content=\"target-densitydpi=device-dpi,width=decive-width,initial-scale=1,maximum-scale=1\"></meta>\n" +
-            "        <title>FAQ</title>\n" +
-            "        <style>\n" +
-            "            html,body {\n" +
-            "                width: 100%;\n" +
-            "                margin: 0;\n" +
-            "                padding: 0;\n" +
-            "            }\n" +
-            "            html, body,* {\n" +
-            "                font-family: \"微软雅黑\";\n" +
-            "                line-height: 24px;\n" +
-            "                font-size: 16px;\n" +
-            "            }\n" +
-            "            h1 {\n" +
-            "                font-size: 24px;\n" +
-            "            }\n" +
-            "            body {\n" +
-            "            }\n" +
-            "            .text-center {\n" +
-            "                text-align: center;\n" +
-            "            }\n" +
-            "            ul,li {\n" +
-            "                list-style: none;\n" +
-            "            }\n" +
-            "            ul {\n" +
-            "                margin: 0;\n" +
-            "                padding: 0 10px;\n" +
-            "            }\n" +
-            "            img { height: auto; width: auto\\9; width:100%; }\n" +
-            "        </style>\n" +
-            "    </head>\n" +
-            "<body> ";
+        "<html lang=\"en\">\n" +
+        "    <head>\n" +
+        "        <meta name=\"apple-mobile-web-app-capable\" content=\"yes\"></meta>\n" +
+        "        <meta http-equiv=\"Cache-Control\" name=\"no-store\"></meta>\n" +
+        "        <meta content=\"telephone=no\" name=\"format-detection\"></meta>\n" +
+        "        <meta content=\"email=no\" name=\"format-detection\"></meta>\n" +
+        "        <meta charset=\"utf-8\"></meta>\n" +
+        "        <meta name=\"viewport\" content=\"target-densitydpi=device-dpi,width=decive-width,initial-scale=1,maximum-scale=1\"></meta>\n" +
+        "        <title>FAQ</title>\n" +
+        "        <style>\n" +
+        "            html,body {\n" +
+        "                width: 100%;\n" +
+        "                margin: 0;\n" +
+        "                padding: 0;\n" +
+        "            }\n" +
+        "            html, body,* {\n" +
+        "                font-family: \"微软雅黑\";\n" +
+        "                line-height: 24px;\n" +
+        "                font-size: 16px;\n" +
+        "            }\n" +
+        "            h1 {\n" +
+        "                font-size: 24px;\n" +
+        "            }\n" +
+        "            body {\n" +
+        "            }\n" +
+        "            .text-center {\n" +
+        "                text-align: center;\n" +
+        "            }\n" +
+        "            ul,li {\n" +
+        "                list-style: none;\n" +
+        "            }\n" +
+        "            ul {\n" +
+        "                margin: 0;\n" +
+        "                padding: 0 10px;\n" +
+        "            }\n" +
+        "            img { height: auto; width: auto\\9; width:100%; }\n" +
+        "        </style>\n" +
+        "    </head>\n" +
+        "<body> ";
 
     private static final String HTML_SUFFIX = " </body></html>";
 
@@ -119,8 +119,8 @@ public class CommonSpider extends AsyncGather {
             LOG.info("加载普通网页爬虫url忽略名单成功,忽略名单:{}", ignoredUrls);
             try {
                 String[] datePatternFile = FileUtils.readFileToString(
-                        new File(CommonSpider.class.getClassLoader().getResource("datePattern.txt").getFile()),
-                        "utf8"
+                    new File(CommonSpider.class.getClassLoader().getResource("datePattern.txt").getFile()),
+                    "utf8"
                 ).replace("\r", "").split("=====\r?\n");
                 String[] dateList = datePatternFile[0].split("\n");
                 String[] timeList = datePatternFile[1].split("\n");
@@ -182,25 +182,25 @@ public class CommonSpider extends AsyncGather {
                         }).collect(Collectors.toList());
                 } else if (StringUtils.isNotBlank(info.getUrlReg())) {//url正则式不为空
                     links = page.getHtml().links().regex(info.getUrlReg()).all().stream()
-                            .map(s -> {
-                                int indexOfSharp = s.indexOf("#");
-                                return s.substring(0, indexOfSharp == -1 ? s.length() : indexOfSharp);
-                            }).collect(Collectors.toList());
+                        .map(s -> {
+                            int indexOfSharp = s.indexOf("#");
+                            return s.substring(0, indexOfSharp == -1 ? s.length() : indexOfSharp);
+                        }).collect(Collectors.toList());
                 } else {//url正则式为空则抽取本域名下的所有连接,并使用黑名单对链接进行过滤
                     links = page.getHtml().links()
-                            .regex("https?://" + info.getDomain().replace(".", "\\.") + "/.*")
-                            .all().stream().map(s -> {
-                                int indexOfSharp = s.indexOf("#");
-                                return s.substring(0, indexOfSharp == -1 ? s.length() : indexOfSharp);
-                            })
-                            .filter(s -> {
-                                for (String ignoredPostfix : ignoredUrls) {
-                                    if (s.toLowerCase().endsWith(ignoredPostfix)) {
-                                        return false;
-                                    }
+                        .regex("https?://" + info.getDomain().replace(".", "\\.") + "/.*")
+                        .all().stream().map(s -> {
+                            int indexOfSharp = s.indexOf("#");
+                            return s.substring(0, indexOfSharp == -1 ? s.length() : indexOfSharp);
+                        })
+                        .filter(s -> {
+                            for (String ignoredPostfix : ignoredUrls) {
+                                if (s.toLowerCase().endsWith(ignoredPostfix)) {
+                                    return false;
                                 }
-                                return true;
-                            }).collect(Collectors.toList());
+                            }
+                            return true;
+                        }).collect(Collectors.toList());
                 }
                 //如果页面包含iframe则也进行抽取
                 for (Element iframe : page.getHtml().getDocument().getElementsByTag("iframe")) {
@@ -489,7 +489,7 @@ public class CommonSpider extends AsyncGather {
                 page.setSkip(true);
                 return;
             }
-            String contentCleaned = Jsoup.parse(content).text();
+            String contentCleaned = content;
             page.putField("contentCleaned", contentCleaned);
             if (info.isNeedContent() && StringUtils.isBlank(contentCleaned)) {
                 page.setSkip(true);
@@ -504,21 +504,10 @@ public class CommonSpider extends AsyncGather {
                 return;
             }
 
-
             //抽取发布时间
             Date publishTime = new Date();
             page.putField("publishTime", publishTime);
-            ///////////////////////////////////////////////////////
-            if (info.isDoNLP()) {//判断本网站是否需要进行自然语言处理
-                //进行nlp处理之前先去除标签
-                // content = content.replace("</p>", "***");
-                // content = content.replace("<BR>", "***");
-                // content = content.replaceAll("<([\\s\\S]*?)>", "");
-                // content = content.replace("***", "<br/>");
-                // content = content.replace("\n", "<br/>");
-                // content = content.replaceAll("(\\<br/\\>\\s*){2,}", "<br/> ");
-                // content = content.replaceAll("(&nbsp;\\s*)+", " ");
-                // String contentWithoutHtml = content.replaceAll("<br/>", "");
+            if (info.isDoNLP()) {
                 String contentWithoutHtml = contentCleaned;
                 try {
                     //抽取关键词,10个词
@@ -592,7 +581,7 @@ public class CommonSpider extends AsyncGather {
      */
     public void deleteAll() {
         List<String> spiderUUID2BeRemoved = spiderMap.entrySet().stream().filter(
-                spiderEntry -> spiderEntry.getValue().getStatus() == Spider.Status.Stopped
+            spiderEntry -> spiderEntry.getValue().getStatus() == Spider.Status.Stopped
         ).map(Map.Entry::getKey).collect(Collectors.toList());
         for (String uuid : spiderUUID2BeRemoved) {
             try {
@@ -649,7 +638,7 @@ public class CommonSpider extends AsyncGather {
             scheduler.setDuplicateRemover(commonWebpagePipeline);
         }
         MySpider spider = (MySpider) makeSpider(info, task)
-                .setScheduler(scheduler);
+            .setScheduler(scheduler);
         //添加其他的数据管道
         if (pipelineList != null && pipelineList.size() > 0) {
             pipelineList.forEach(spider::addPipeline);
@@ -676,8 +665,8 @@ public class CommonSpider extends AsyncGather {
         task.addExtraInfo("spiderInfo", info);
         QueueScheduler queueScheduler = new QueueScheduler();
         MySpider spider = (MySpider) makeSpider(info, task)
-                .addPipeline(resultItemsCollectorPipeline)
-                .setScheduler(queueScheduler);
+            .addPipeline(resultItemsCollectorPipeline)
+            .setScheduler(queueScheduler);
         if (info.isAjaxSite() && StringUtils.isNotBlank(StaticValue.ajaxDownloader)) {
             List<SpiderListener> spiderListenerList = new ArrayList<>(1);
 
@@ -976,14 +965,14 @@ public class CommonSpider extends AsyncGather {
             Task task = taskManager.getTaskById(this.getUUID());
             boolean reachMax = false, exceedRatio = false;
             if (
-                    (
-                            //已抓取数量大于最大抓取页数,退出
-                            (reachMax = (SPIDER_INFO.getMaxPageGather() > 0 && task.getCount() >= SPIDER_INFO.getMaxPageGather()))
-                                    ||
-                                    //如果抓取页面超过最大抓取数量ratio倍的时候,仍未达到最大抓取数量,爬虫也退出
-                                    (exceedRatio = (this.getPageCount() > SPIDER_INFO.getMaxPageGather() * StaticValue.commonsWebpageCrawlRatio && SPIDER_INFO.getMaxPageGather() > 0))
-                    )
-                            && this.getStatus() == Status.Running) {
+                (
+                    //已抓取数量大于最大抓取页数,退出
+                    (reachMax = (SPIDER_INFO.getMaxPageGather() > 0 && task.getCount() >= SPIDER_INFO.getMaxPageGather()))
+                        ||
+                        //如果抓取页面超过最大抓取数量ratio倍的时候,仍未达到最大抓取数量,爬虫也退出
+                        (exceedRatio = (this.getPageCount() > SPIDER_INFO.getMaxPageGather() * StaticValue.commonsWebpageCrawlRatio && SPIDER_INFO.getMaxPageGather() > 0))
+                )
+                    && this.getStatus() == Status.Running) {
                 LOG.info("爬虫ID{}已处理{}个页面,有效页面{}个,最大抓取页数{},reachMax={},exceedRatio={},退出.", this.getUUID(), this.getPageCount(), task.getCount(), SPIDER_INFO.getMaxPageGather(), reachMax, exceedRatio);
                 task.setDescription("爬虫ID%s已处理%s个页面,有效页面%s个,达到最大抓取页数%s,reachMax=%s,exceedRatio=%s,退出.", this.getUUID(), this.getPageCount(), task.getCount(), SPIDER_INFO.getMaxPageGather(), reachMax, exceedRatio);
                 this.stop();
@@ -1021,15 +1010,15 @@ public class CommonSpider extends AsyncGather {
             MySpider mySpider = (MySpider) o;
 
             return new EqualsBuilder()
-                    .append(this.getUUID(), mySpider.getUUID())
-                    .isEquals();
+                .append(this.getUUID(), mySpider.getUUID())
+                .isEquals();
         }
 
         @Override
         public int hashCode() {
             return new HashCodeBuilder(17, 37)
-                    .append(this.getUUID())
-                    .toHashCode();
+                .append(this.getUUID())
+                .toHashCode();
         }
     }
 
@@ -1041,9 +1030,9 @@ public class CommonSpider extends AsyncGather {
 
         public MyPageProcessor(SpiderInfo info, Task task) {
             this.site = Site.me().setDomain(info.getDomain()).setTimeOut(info.getTimeout())
-                    .setRetryTimes(info.getRetry()).setSleepTime(info.getSleep())
-                    .setCharset(StringUtils.isBlank(info.getCharset()) ? null : info.getCharset())
-                    .setUserAgent(info.getUserAgent());
+                .setRetryTimes(info.getRetry()).setSleepTime(info.getSleep())
+                .setCharset(StringUtils.isBlank(info.getCharset()) ? null : info.getCharset())
+                .setUserAgent(info.getUserAgent());
             //设置抓取代理IP与接口
             if (StringUtils.isNotBlank(info.getProxyHost()) && info.getProxyPort() > 0) {
                 this.site.setHttpProxy(new HttpHost(info.getProxyHost(), info.getProxyPort()));

@@ -84,14 +84,20 @@ public class InternalFileDownloader extends AbstractDownloader {
                     } else {
                         result = PdfUtil.fetchContentByTika(storePath);
                     }
-                    String[] resultSplited = result.split("\n\n");
+                    String[] resultSplited = result.split("\n");
                     List<String> resultList = Arrays.stream(resultSplited)
                         .filter(x -> {
                             Pattern p = Pattern.compile("— [0-9]* —");
                             return !p.matcher(x).find();
                         })
-                        .map(line -> line.replaceAll(" ", ""))
                         .collect(Collectors.toList());
+
+                    if (needOCR) {
+                        resultList = resultList.stream().flatMap(line -> Arrays.stream(line.split(" ").clone()))
+                            .collect(Collectors.toList());
+                    } else {
+                        resultList = resultList.stream().map(line -> line.replaceAll(" ", "")).collect(Collectors.toList());
+                    }
 
                     StringBuilder sb = new StringBuilder();
                     for (String line : resultList) {
