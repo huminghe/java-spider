@@ -48,6 +48,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -252,7 +253,7 @@ public class PdfUtil {
         }
     }
 
-    public static void watermarkPDF(String sourceFile, String destinationPath) {
+    public static void watermarkPDF(String sourceFile, String destinationPath, String accountName) {
         float watermarkTrimmingRectangleWidth;
         float watermarkTrimmingRectangleHeight;
 
@@ -310,7 +311,9 @@ public class PdfUtil {
                 PdfCanvas canvas = new PdfCanvas(form, pdfDoc);
 
                 Date date = new Date();
-                String dateString = date.toString();
+                String strDateFormat = "yyyy-MM-dd HH:mm:ss";
+                SimpleDateFormat sdf = new SimpleDateFormat(strDateFormat);
+                String dateString = sdf.format(date);
 
                 float[] transformValues = new float[6];
                 transform.getMatrix(transformValues);
@@ -318,7 +321,7 @@ public class PdfUtil {
                     .beginText().setColor(ColorConstants.GRAY, true).setExtGState(gs1)
                     .setTextMatrix(transformValues[0], transformValues[1], transformValues[2], transformValues[3], transformValues[4], transformValues[5])
                     .setFontAndSize(font, fontSize)
-                    .showText("知识萃取平台----" + dateString)
+                    .showText("知识萃取平台---" + accountName + "---" + dateString)
                     .endText()
                     .restoreState();
 

@@ -255,4 +255,11 @@ public class CommonWebpageController {
         webpageService.exportTitleContentPairBySpiderUUID(uuid, outputStream);
         outputStream.close();
     }
+
+    @RequestMapping(value = "getNerCorpus", method = RequestMethod.GET)
+    @ResponseBody
+    public String getNerCorpus(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                               @RequestParam(value = "numPerDoc", required = false, defaultValue = "5") int numPerDoc) {
+        return webpageService.getNerCorpus(domain, 10, page, numPerDoc);
+    }
 }

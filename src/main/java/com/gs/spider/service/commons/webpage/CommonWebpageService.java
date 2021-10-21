@@ -9,6 +9,7 @@ import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
+import com.gs.spider.utils.NlpUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,8 +17,13 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -251,4 +257,47 @@ public class CommonWebpageService {
     public ResultBundle<Pair<List<WebpageWithHighlight>, Long>> getWebPageByKeywordAndDomain(String query, String domain, int size, int page) {
         return bundleBuilder.bundle(query, () -> commonWebpageDAO.getWebpageByKeywordAndDomain(query, domain, size, page));
     }
+
+    public String getNerCorpus(String domain, int size, int page, int numPerDoc) {
+        int idx = 1;
+        boolean notFinished = true;
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/ner_corpus/" + domain + ".txt"), StandardCharsets.UTF_8));
+            BufferedWriter finalWriter = writer;
+            while (idx <= page && notFinished) {
+                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, page);
+                idx++;
+                notFinished = webpages.size() >= size;
+                webpages.stream().map(webpage -> {
+                    String content = webpage.getContentCleaned();
+                    List<String> sentences = NlpUtil.toSentences(content, 64);
+                    Collections.shuffle(sentences);
+                    return sentences;
+                })
+                    .forEach(sentences -> sentences.stream()
+                        .filter(s -> s.length() > 15)
+                        .limit(numPerDoc).forEach(s -> {
+                            try {
+                                finalWriter.write(s);
+                                finalWriter.newLine();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (Exception ee) {
+                    ee.printStackTrace();
+                }
+            }
+        }
+        return "success";
+    }
+
 }

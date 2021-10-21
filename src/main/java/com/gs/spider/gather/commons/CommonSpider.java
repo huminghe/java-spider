@@ -142,7 +142,8 @@ public class CommonSpider extends AsyncGather {
                         datePattern.add(Pair.of(dateReg + timeReg, new SimpleDateFormat(dateFormat + timeFormat)));
                     }
                 }
-                datePattern.sort((o1, o2) -> o2.getLeft().length() - o1.getLeft().length());
+                // 按照源文件顺序排序
+                // datePattern.sort((o1, o2) -> o2.getLeft().length() - o1.getLeft().length());
                 LOG.info("日期匹配式加载完成");
             } catch (IOException e) {
                 LOG.error("加载日期匹配式失败，{}", e.getLocalizedMessage());
@@ -382,7 +383,14 @@ public class CommonSpider extends AsyncGather {
                         calendar.set(Calendar.YEAR, Calendar.getInstance().get(Calendar.YEAR));
                         publishDate = calendar.getTime();
                     }
-                    page.putField("publishTime", publishDate);
+                    String beginTime = "2010-01-01";
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                    Date startDate = format.parse(beginTime);
+                    if (publishDate.compareTo(new Date()) <= 0 || publishDate.compareTo(startDate) >= 0) {
+                        page.putField("publishTime", publishDate);
+                    } else {
+                        page.putField("publishTime", new Date());
+                    }
                 } catch (ParseException e) {
                     LOG.debug("解析文章发布时间出错,source:" + publishTime + ",format:" + simpleDateFormat.toPattern());
                     task.setDescription("解析文章发布时间出错,url:%s source:%s ,format:%s", page.getUrl().toString(), publishTime, simpleDateFormat.toPattern());
