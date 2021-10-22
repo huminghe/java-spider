@@ -400,8 +400,7 @@ public class CommonSpider extends AsyncGather {
                     }
                 }
             } else if (info.isNeedPublishTime()) {//if the publishTime is blank ,skip it!
-                page.setSkip(true);
-                return;
+                page.putField("publishTime", new Date());
             }
             ///////////////////////////////////////////////////////
             if (info.isDoNLP()) {//判断本网站是否需要进行自然语言处理
