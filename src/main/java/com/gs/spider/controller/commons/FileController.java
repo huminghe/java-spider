@@ -87,7 +87,7 @@ public class FileController extends BaseController {
         } else if (fileName.endsWith("xls") || fileName.endsWith("xlsx")) {
             return "application/vnd.ms-excel";
         } else {
-            return "text/plain";
+            return "application/unknown";
         }
     }
 
