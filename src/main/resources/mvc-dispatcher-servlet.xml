@@ -15,6 +15,14 @@
       http://www.springframework.org/schema/task
       http://www.springframework.org/schema/task/spring-task-3.0.xsd">
     <aop:aspectj-autoproxy proxy-target-class="true"/>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/upload/file"/>
+            <bean class="com.gs.spider.helper.AccessControlInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
     <mvc:annotation-driven>
         <mvc:message-converters>
             <bean class="org.springframework.http.converter.json.GsonHttpMessageConverter"/>
@@ -23,9 +31,14 @@
     <mvc:resources location="/js/" mapping="/js/**" cache-period="2592000"/>
     <mvc:resources location="/css/" mapping="/css/**" cache-period="2592000"/>
 
-    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+    <bean id="view" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="prefix" value="/pages/"/>
         <property name="suffix" value=".jsp"/>
+    </bean>
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="utf-8"/>
+        <property name="maxUploadSize" value="10485760000"/>
+        <property name="maxInMemorySize" value="40960"/>
     </bean>
     <bean class="com.gs.spider.gather.commons.CommonSpider" name="commonSpider">
         <constructor-arg name="taskManager" ref="taskManager"/>
