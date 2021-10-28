@@ -29,7 +29,7 @@ public class UploadController extends BaseController {
     @ResponseBody
     public String uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            File file1 = new File(StaticValue.internalFileStorePrefix, file.getOriginalFilename());
+            File file1 = new File(StaticValue.fileSystemPrefix, file.getOriginalFilename());
             logger.info("upload file name: " + file.getOriginalFilename());
             if (!file1.exists()) {
                 file1.createNewFile();

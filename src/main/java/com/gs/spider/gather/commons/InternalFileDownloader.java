@@ -15,6 +15,7 @@ import us.codecraft.webmagic.selector.PlainText;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -77,7 +78,11 @@ public class InternalFileDownloader extends AbstractDownloader {
                     File storeFile = new File(StaticValue.internalFileStorePrefix, url);
                     storeFile.getParentFile().mkdirs();
                     String storePath = storeFile.getPath();
-                    PdfUtil.removeWatermarkPDF(path, storePath);
+                    try {
+                        PdfUtil.removeWatermarkPDF(path, storePath);
+                    } catch (Exception e) {
+                        Files.copy(new File(path).toPath(), new File(storePath).toPath());
+                    }
                     boolean needOCR = PdfUtil.needOCR(storePath);
                     if (needOCR) {
                         result = PdfUtil.fetchContentByOCR(storePath);

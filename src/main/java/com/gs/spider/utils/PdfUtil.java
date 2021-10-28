@@ -222,38 +222,34 @@ public class PdfUtil {
         return result;
     }
 
-    public static void removeWatermarkPDF(String sourceFile, String destinationPath) {
-        try {
-            PdfDocument pdfDoc = new PdfDocument(new PdfReader(sourceFile), new PdfWriter(destinationPath));
-            int numberOfPages = pdfDoc.getNumberOfPages();
-            System.out.println(numberOfPages);
+    public static void removeWatermarkPDF(String sourceFile, String destinationPath) throws Exception {
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(sourceFile), new PdfWriter(destinationPath));
+        int numberOfPages = pdfDoc.getNumberOfPages();
+        System.out.println(numberOfPages);
 
-            for (int i = 1; i <= numberOfPages; i++) {
-                PdfDictionary pageDict = pdfDoc.getPage(i).getPdfObject();
+        for (int i = 1; i <= numberOfPages; i++) {
+            PdfDictionary pageDict = pdfDoc.getPage(i).getPdfObject();
 
-                PdfArray contents = pageDict.getAsArray(PdfName.Contents);
-                PdfStream psw = contents.getAsStream(2);
+            PdfArray contents = pageDict.getAsArray(PdfName.Contents);
+            PdfStream psw = contents.getAsStream(2);
 
-                psw.setData("".getBytes());
-                psw.clear();
+            psw.setData("".getBytes());
+            psw.clear();
 
-                PdfDictionary resources = pageDict.getAsDictionary(PdfName.Resources);
-                PdfDictionary fonts = resources.getAsDictionary(PdfName.Font);
+            PdfDictionary resources = pageDict.getAsDictionary(PdfName.Resources);
+            PdfDictionary fonts = resources.getAsDictionary(PdfName.Font);
 
-                fonts.entrySet().forEach(x -> {
-                    if (x.getKey().toString().startsWith("/Xi")) {
-                        PdfDictionary p = (PdfDictionary) x.getValue();
-                        p.clear();
-                    }
-                });
-            }
-            pdfDoc.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            fonts.entrySet().forEach(x -> {
+                if (x.getKey().toString().startsWith("/Xi")) {
+                    PdfDictionary p = (PdfDictionary) x.getValue();
+                    p.clear();
+                }
+            });
         }
+        pdfDoc.close();
     }
 
-    public static void watermarkPDF(String sourceFile, String destinationPath, String accountName) {
+    public static void watermarkPDF(String sourceFile, String destinationPath, String accountName) throws Exception {
         float watermarkTrimmingRectangleWidth;
         float watermarkTrimmingRectangleHeight;
 
@@ -266,77 +262,73 @@ public class PdfUtil {
         float yTranslation = 25;
 
         double rotationInRads = Math.PI / 3;
-        try {
 
-            String pdfFontPath = StaticValue.pdfFontPath;
+        String pdfFontPath = StaticValue.pdfFontPath;
 
-            PdfFont font = PdfFontFactory.createFont(pdfFontPath, PdfEncodings.IDENTITY_H);
-            float fontSize = 40;
+        PdfFont font = PdfFontFactory.createFont(pdfFontPath, PdfEncodings.IDENTITY_H);
+        float fontSize = 40;
 
-            PdfDocument pdfDoc = new PdfDocument(new PdfReader(sourceFile), new PdfWriter(destinationPath));
-            int numberOfPages = pdfDoc.getNumberOfPages();
-            PdfPage page = null;
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(sourceFile), new PdfWriter(destinationPath));
+        int numberOfPages = pdfDoc.getNumberOfPages();
+        PdfPage page = null;
 
-            for (int i = 1; i <= numberOfPages; i++) {
-                page = pdfDoc.getPage(i);
-                Rectangle ps = page.getPageSize();
-                watermarkTrimmingRectangleWidth = ps.getWidth() - 50;
-                watermarkTrimmingRectangleHeight = ps.getHeight() - 50;
-                formWidth = watermarkTrimmingRectangleWidth;
-                formHeight = watermarkTrimmingRectangleHeight;
+        for (int i = 1; i <= numberOfPages; i++) {
+            page = pdfDoc.getPage(i);
+            Rectangle ps = page.getPageSize();
+            watermarkTrimmingRectangleWidth = ps.getWidth() - 50;
+            watermarkTrimmingRectangleHeight = ps.getHeight() - 50;
+            formWidth = watermarkTrimmingRectangleWidth;
+            formHeight = watermarkTrimmingRectangleHeight;
 
-                //Center the annotation
-                float bottomLeftX = ps.getWidth() / 2 - watermarkTrimmingRectangleWidth / 2;
-                float bottomLeftY = ps.getHeight() / 2 - watermarkTrimmingRectangleHeight / 2;
-                Rectangle watermarkTrimmingRectangle = new Rectangle(bottomLeftX, bottomLeftY, watermarkTrimmingRectangleWidth, watermarkTrimmingRectangleHeight);
+            //Center the annotation
+            float bottomLeftX = ps.getWidth() / 2 - watermarkTrimmingRectangleWidth / 2;
+            float bottomLeftY = ps.getHeight() / 2 - watermarkTrimmingRectangleHeight / 2;
+            Rectangle watermarkTrimmingRectangle = new Rectangle(bottomLeftX, bottomLeftY, watermarkTrimmingRectangleWidth, watermarkTrimmingRectangleHeight);
 
-                PdfWatermarkAnnotation watermark = new PdfWatermarkAnnotation(watermarkTrimmingRectangle);
+            PdfWatermarkAnnotation watermark = new PdfWatermarkAnnotation(watermarkTrimmingRectangle);
 
-                //Apply linear algebra rotation math
-                //Create identity matrix
-                AffineTransform transform = new AffineTransform();//No-args constructor creates the identity transform
-                //Apply translation
-                transform.translate(xTranslation, yTranslation);
-                //Apply rotation
-                transform.rotate(rotationInRads);
+            //Apply linear algebra rotation math
+            //Create identity matrix
+            AffineTransform transform = new AffineTransform();//No-args constructor creates the identity transform
+            //Apply translation
+            transform.translate(xTranslation, yTranslation);
+            //Apply rotation
+            transform.rotate(rotationInRads);
 
-                PdfFixedPrint fixedPrint = new PdfFixedPrint();
-                watermark.setFixedPrint(fixedPrint);
-                //Create appearance
-                Rectangle formRectangle = new Rectangle(formXOffset, formYOffset, formWidth, formHeight);
+            PdfFixedPrint fixedPrint = new PdfFixedPrint();
+            watermark.setFixedPrint(fixedPrint);
+            //Create appearance
+            Rectangle formRectangle = new Rectangle(formXOffset, formYOffset, formWidth, formHeight);
 
-                //Observation: font XObject will be resized to fit inside the watermark rectangle
-                PdfFormXObject form = new PdfFormXObject(formRectangle);
-                PdfExtGState gs1 = new PdfExtGState().setFillOpacity(0.5f);
-                PdfCanvas canvas = new PdfCanvas(form, pdfDoc);
+            //Observation: font XObject will be resized to fit inside the watermark rectangle
+            PdfFormXObject form = new PdfFormXObject(formRectangle);
+            PdfExtGState gs1 = new PdfExtGState().setFillOpacity(0.5f);
+            PdfCanvas canvas = new PdfCanvas(form, pdfDoc);
 
-                Date date = new Date();
-                String strDateFormat = "yyyy-MM-dd HH:mm:ss";
-                SimpleDateFormat sdf = new SimpleDateFormat(strDateFormat);
-                String dateString = sdf.format(date);
+            Date date = new Date();
+            String strDateFormat = "yyyy-MM-dd HH:mm:ss";
+            SimpleDateFormat sdf = new SimpleDateFormat(strDateFormat);
+            String dateString = sdf.format(date);
 
-                float[] transformValues = new float[6];
-                transform.getMatrix(transformValues);
-                canvas.saveState()
-                    .beginText().setColor(ColorConstants.GRAY, true).setExtGState(gs1)
-                    .setTextMatrix(transformValues[0], transformValues[1], transformValues[2], transformValues[3], transformValues[4], transformValues[5])
-                    .setFontAndSize(font, fontSize)
-                    .showText("知识萃取平台---" + accountName + "---" + dateString)
-                    .endText()
-                    .restoreState();
+            float[] transformValues = new float[6];
+            transform.getMatrix(transformValues);
+            canvas.saveState()
+                .beginText().setColor(ColorConstants.GRAY, true).setExtGState(gs1)
+                .setTextMatrix(transformValues[0], transformValues[1], transformValues[2], transformValues[3], transformValues[4], transformValues[5])
+                .setFontAndSize(font, fontSize)
+                .showText("知识萃取平台---" + accountName + "---" + dateString)
+                .endText()
+                .restoreState();
 
-                canvas.release();
+            canvas.release();
 
-                watermark.setAppearance(PdfName.N, new PdfAnnotationAppearance(form.getPdfObject()));
-                watermark.setFlags(PdfAnnotation.PRINT);
+            watermark.setAppearance(PdfName.N, new PdfAnnotationAppearance(form.getPdfObject()));
+            watermark.setFlags(PdfAnnotation.PRINT);
 
-                page.addAnnotation(watermark);
+            page.addAnnotation(watermark);
 
-            }
-            page.flush();
-            pdfDoc.close();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+        page.flush();
+        pdfDoc.close();
     }
 }

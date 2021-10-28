@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 
 /**
  * @author huminghe
@@ -40,8 +41,13 @@ public class FileController extends BaseController {
             path = new File(StaticValue.internalFileStorePrefix, path).getPath();
 
             String tmpPath = path + RandomStringUtils.randomAlphabetic(10);
-            PdfUtil.watermarkPDF(path, tmpPath, accountName);
-            response.setContentType("application/pdf");
+            try {
+                PdfUtil.watermarkPDF(path, tmpPath, accountName);
+            } catch (Exception ex) {
+                logger.info("watermark failed, file: " + path);
+                Files.copy(new File(path).toPath(), new File(tmpPath).toPath());
+            }
+            response.setContentType(getContentType(path));
             bis = new FileInputStream(tmpPath);
             os = response.getOutputStream();
             int count = 0;
@@ -68,6 +74,20 @@ public class FileController extends BaseController {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private String getContentType(String fileName) {
+        if (fileName.endsWith("pdf")) {
+            return "application/pdf";
+        } else if (fileName.endsWith("ppt") || fileName.endsWith("pptx")) {
+            return "application/vnd.ms-powerpoint";
+        } else if (fileName.endsWith("doc") || fileName.endsWith("docx")) {
+            return "application/msword";
+        } else if (fileName.endsWith("xls") || fileName.endsWith("xlsx")) {
+            return "application/vnd.ms-excel";
+        } else {
+            return "text/plain";
         }
     }
 
