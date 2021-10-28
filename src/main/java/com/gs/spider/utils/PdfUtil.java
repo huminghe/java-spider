@@ -40,6 +40,8 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sun.misc.BASE64Encoder;
 
 import javax.imageio.ImageIO;
@@ -60,6 +62,8 @@ import java.util.Set;
  * @date 2021/8/25
  */
 public class PdfUtil {
+
+    private static Logger logger = LoggerFactory.getLogger(PdfUtil.class);
 
     public static final String FONT_FS = "sysfFS";
     public static final String FONT_FZFS = "sysfFZFS";
@@ -87,7 +91,7 @@ public class PdfUtil {
             }
             pdfDoc.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.info("no need ocr, file: " + sourceFile);
         }
         return false;
     }
