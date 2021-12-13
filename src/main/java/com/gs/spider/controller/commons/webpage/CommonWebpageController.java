@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -257,9 +259,107 @@ public class CommonWebpageController {
     }
 
     @RequestMapping(value = "getNerCorpus", method = RequestMethod.GET)
+    public void getNerCorpus(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                             @RequestParam(value = "numPerDoc", required = false, defaultValue = "5") int numPerDoc,
+                             HttpServletResponse response) {
+        String info = webpageService.getNerCorpusNew(domain, 10, page, numPerDoc);
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=nerCorpus.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(info.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @RequestMapping(value = "getCorpus", method = RequestMethod.GET)
     @ResponseBody
-    public String getNerCorpus(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
-                               @RequestParam(value = "numPerDoc", required = false, defaultValue = "5") int numPerDoc) {
-        return webpageService.getNerCorpus(domain, 10, page, numPerDoc);
+    public void getCorpus(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                          HttpServletResponse response) {
+        String info = webpageService.getCorpusNew(domain, 10, page);
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=rawCorpus.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(info.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @RequestMapping(value = "compareNlp", method = RequestMethod.GET)
+    public void compareNlp(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                           @RequestParam(value = "size", required = false, defaultValue = "5") int size,
+                           HttpServletResponse response) {
+        String info = webpageService.compareNlp(domain, size, page);
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=nlpCompare.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(info.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

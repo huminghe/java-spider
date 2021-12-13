@@ -30,3 +30,4 @@ www.cntheory.com	中央党校理论网
 sce.ruc.edu.cn	中国人民大学继续教育学院
 mp.weixin.qq.com	党校公开课
 fileSystem	内部资料
+www.chinagwy.org	公考资讯网

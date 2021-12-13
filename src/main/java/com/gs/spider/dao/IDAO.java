@@ -30,20 +30,35 @@ import java.util.stream.Collectors;
 /**
  * IDAO Elasticsearch数据接口
  */
-public abstract class IDAO<T> {
+public abstract class IDAO<T> implements AutoCloseable {
     private static final int SCROLL_TIMEOUT = 5;
     protected Client client;
     protected Queue<T> queue = new ConcurrentLinkedDeque<>();
     protected ESClient esClient;
     private Logger logger = LogManager.getLogger(IDAO.class);
     private String INDEX_NAME, TYPE_NAME;
+    private Timer timer;
+
+    @Override
+    public void close() {
+        try {
+            client.close();
+        } catch (Exception e) {
+            logger.info("es client close error, ", e);
+        }
+        try {
+            timer.cancel();
+        } catch (Exception e) {
+            logger.info("timer close error, ", e);
+        }
+    }
 
     public IDAO(ESClient esClient, String index_name, String type_name) {
         this.esClient = esClient;
         this.INDEX_NAME = index_name;
         this.TYPE_NAME = type_name;
         initClient(esClient);
-        Timer timer = new Timer();
+        timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {

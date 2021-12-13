@@ -81,10 +81,13 @@ public class InternalFileDownloader extends AbstractDownloader {
                     try {
                         PdfUtil.removeWatermarkPDF(path, storePath);
                     } catch (Exception e) {
+                        new File(storePath).delete();
                         Files.copy(new File(path).toPath(), new File(storePath).toPath());
                     }
                     boolean needOCR = PdfUtil.needOCR(storePath);
-                    if (needOCR) {
+                    if (storePath.endsWith("jpg") || storePath.endsWith("png")) {
+                        result = PdfUtil.doOCRFromFile(storePath);
+                    } else if (needOCR) {
                         result = PdfUtil.fetchContentByOCR(storePath);
                     } else {
                         result = PdfUtil.fetchContentByTika(storePath);

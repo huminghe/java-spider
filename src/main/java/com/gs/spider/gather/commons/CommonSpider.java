@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 /**
  * CommonSpider
  */
-public class CommonSpider extends AsyncGather {
+public class CommonSpider extends AsyncGather implements AutoCloseable {
     private static final Logger LOG = LogManager.getLogger(CommonSpider.class);
     private static final String LINK_KEY = "LINK_LIST";
     private static final String DYNAMIC_FIELD = "dynamic_fields";
@@ -112,6 +112,8 @@ public class CommonSpider extends AsyncGather {
     private static final String HTML_SUFFIX = " </body></html>";
 
     private static final Map<String, String> domainNameMap = Loader.loadMapping("/data/domain_info.txt");
+
+    private Timer timer;
 
     static {
         try {
@@ -548,7 +550,7 @@ public class CommonSpider extends AsyncGather {
     @Autowired
     public CommonSpider(TaskManager taskManager) throws InterruptedException, BindException {
         this.taskManager = taskManager;
-        Timer timer = new Timer();
+        timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -557,6 +559,20 @@ public class CommonSpider extends AsyncGather {
             }
         }, StaticValue.taskDeleteDelay * 3600000, StaticValue.taskDeletePeriod * 3600000);
         LOG.debug("定时删除普通网页抓取任务记录线程已启动,延时:{}小时,每{}小时删除一次", StaticValue.taskDeleteDelay, StaticValue.taskDeletePeriod);
+    }
+
+    @Override
+    public void close() {
+        try {
+            timer.cancel();
+        } catch (Exception e) {
+            LOG.info("timer close error, ", e);
+        }
+        try {
+            spiderMap.values().forEach(MySpider::close);
+        } catch (Exception e) {
+            LOG.info("spiders close error, ", e);
+        }
     }
 
     /**

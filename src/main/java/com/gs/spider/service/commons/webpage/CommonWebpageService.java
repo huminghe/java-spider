@@ -10,6 +10,7 @@ import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.utils.NlpUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * CommonWebpageService
@@ -258,15 +260,39 @@ public class CommonWebpageService {
         return bundleBuilder.bundle(query, () -> commonWebpageDAO.getWebpageByKeywordAndDomain(query, domain, size, page));
     }
 
+    public String getNerCorpusNew(String domain, int size, int page, int numPerDoc) {
+        int idx = 1;
+        boolean notFinished = true;
+        StringBuffer sb = new StringBuffer();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            webpages.stream().map(webpage -> {
+                String content = webpage.getContentCleaned();
+                List<String> sentences = NlpUtil.toSentences(content, 64);
+                Collections.shuffle(sentences);
+                return sentences;
+            })
+                .forEach(sentences -> sentences.stream().filter(s -> s.length() > 15)
+                    .limit(numPerDoc).forEach(s -> {
+                        sb.append(s);
+                        sb.append("\n");
+                    }));
+        }
+        return sb.toString();
+    }
+
+    @Deprecated
     public String getNerCorpus(String domain, int size, int page, int numPerDoc) {
         int idx = 1;
         boolean notFinished = true;
         BufferedWriter writer = null;
         try {
-            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/ner_corpus/" + domain + ".txt"), StandardCharsets.UTF_8));
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/ner_corpus_new/" + domain + ".txt"), StandardCharsets.UTF_8));
             BufferedWriter finalWriter = writer;
             while (idx <= page && notFinished) {
-                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, page);
+                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
                 idx++;
                 notFinished = webpages.size() >= size;
                 webpages.stream().map(webpage -> {
@@ -298,6 +324,97 @@ public class CommonWebpageService {
             }
         }
         return "success";
+    }
+
+    public String getCorpusNew(String domain, int size, int page) {
+        int idx = 1;
+        boolean notFinished = true;
+        StringBuffer sb = new StringBuffer();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            webpages.stream().map(Webpage::getContentCleaned)
+                .forEach(para -> {
+                    sb.append(para);
+                    sb.append("\n");
+                });
+        }
+        return sb.toString();
+    }
+
+    @Deprecated
+    public String getCorpus(String domain, int size, int page, int numPerDoc) {
+        int idx = 1;
+        boolean notFinished = true;
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/corpus_new/" + domain + ".txt"), StandardCharsets.UTF_8));
+            BufferedWriter finalWriter = writer;
+            while (idx <= page && notFinished) {
+                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
+                idx++;
+                notFinished = webpages.size() >= size;
+                webpages.stream().map(webpage -> {
+                    String content = webpage.getContentCleaned();
+                    return content;
+                })
+                    .forEach(s -> {
+                        try {
+                            finalWriter.write(s);
+                            finalWriter.newLine();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (Exception ee) {
+                    ee.printStackTrace();
+                }
+            }
+        }
+        return "success";
+    }
+
+    public String compareNlp(String domain, int size, int page) {
+
+        List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, page);
+        List<String> info = webpages.stream().map(webpage -> {
+            String content = webpage.getContentCleaned();
+            String title = webpage.getTitle();
+            String url = webpage.getUrl();
+            List<String> lgKeywords = commonSpider.getKeywordsExtractor().extractKeywords(title, content);
+            List<String> lgSummary = commonSpider.getKeywordsExtractor().extractSummary(content);
+            List<String> hanlpKeywords = commonSpider.getNamedEntitiesExtractor().extractKeywords(title, content);
+            List<String> hanlpSummary = commonSpider.getNamedEntitiesExtractor().extractSummary(content);
+            StringBuilder sb = new StringBuilder();
+            sb.append("标题\n");
+            sb.append(title);
+            sb.append("\n");
+            sb.append("内容链接\n");
+            sb.append(url);
+            sb.append("\n");
+            sb.append("当前采用的算法\n");
+            sb.append(StringUtils.join(lgKeywords, ", "));
+            sb.append("\n");
+            sb.append(StringUtils.join(lgSummary, " "));
+            sb.append("\n");
+            sb.append("Hanlp 算法\n");
+            sb.append(StringUtils.join(hanlpKeywords, ", "));
+            sb.append("\n");
+            sb.append(StringUtils.join(hanlpSummary, " "));
+            sb.append("\n");
+            return sb.toString();
+        })
+            .collect(Collectors.toList());
+
+        return StringUtils.join(info, "\n");
     }
 
 }
