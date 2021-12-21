@@ -9,6 +9,7 @@ import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
+import com.gs.spider.utils.ClozeExtractor;
 import com.gs.spider.utils.NlpUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -43,6 +44,8 @@ public class CommonWebpageService {
     private ResultBundleBuilder bundleBuilder;
     @Autowired
     private CommonSpider commonSpider;
+    @Autowired
+    private ClozeExtractor clozeExtractor;
 
     /**
      * 根据spiderUUID返回该spider抓取到的文章
@@ -415,6 +418,10 @@ public class CommonWebpageService {
             .collect(Collectors.toList());
 
         return StringUtils.join(info, "\n");
+    }
+
+    public String getKeyQuestion(String content, int num) {
+        return StringUtils.join(clozeExtractor.extractKeyQuestionResult(content, num), "\n");
     }
 
 }

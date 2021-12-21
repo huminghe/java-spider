@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -100,6 +101,8 @@ public class NlpUtil {
         add('，');
         add(',');
     }};
+
+    private static final Pattern NUM_PREFIX_PATTERN = Pattern.compile("(^[(（]?[0-9]+[)）.、]( )?)|(^[(（][一二三四五六七八九十]+[)）.、]( )?)");
 
     public static List<String> toSentences(String text, int maxLen) {
         List<String> sentences = toSentence(text);
@@ -206,6 +209,10 @@ public class NlpUtil {
             sentences.add(sb.toString().trim());
         }
         return sentences;
+    }
+
+    public static String removeNumPrefix(String sentence) {
+        return NUM_PREFIX_PATTERN.matcher(sentence).replaceFirst("");
     }
 
 }

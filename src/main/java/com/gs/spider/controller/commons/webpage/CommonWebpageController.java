@@ -3,6 +3,8 @@ package com.gs.spider.controller.commons.webpage;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.gs.spider.model.commons.Webpage;
+import com.gs.spider.model.utils.FileInfo;
+import com.gs.spider.model.utils.QuestionSetInfo;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.service.commons.webpage.CommonWebpageService;
@@ -12,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -361,5 +364,42 @@ public class CommonWebpageController {
                 }
             }
         }
+    }
+
+    @RequestMapping(value = "getKeyQuestion", method = RequestMethod.POST)
+    public void getKeyQuestion(@RequestBody QuestionSetInfo questionSetInfo, HttpServletResponse response) {
+        String content = questionSetInfo.getContent();
+        int num = questionSetInfo.getNum();
+        String result = webpageService.getKeyQuestion(content, num);
+
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=keyQuestion.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(result.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 }

@@ -34,7 +34,7 @@ public class KeywordExtractor implements NLPExtractor {
 
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
-    private static final Segment hanlpSegment = new ViterbiSegment().enableOffset(true).enablePlaceRecognize(true);
+    public static final Segment hanlpSegment = new ViterbiSegment().enableOffset(true).enablePlaceRecognize(true);
 
     private static final Set<String> NOUN = new HashSet<String>() {{
         add("n");
@@ -54,8 +54,6 @@ public class KeywordExtractor implements NLPExtractor {
         add("vn");
     }};
     private static final float DEFAULT_IDF = 6.0F;
-
-    private static final Pattern NUM_PREFIX_PATTERN = Pattern.compile("(^[(（]?[0-9]+[)）.、]( )?)|(^[(（][一二三四五六七八九十]+[)）.、]( )?)");
 
     private final List<Pair<Float, Float>> similarFilterList = new LinkedList<>();
 
@@ -109,7 +107,7 @@ public class KeywordExtractor implements NLPExtractor {
         return summarySentences.stream().limit(6)
             .sorted(Comparator.comparingInt(Sentence::getIdx))
             .map(Sentence::getSentence)
-            .map(this::removeNumPrefix)
+            .map(NlpUtil::removeNumPrefix)
             .collect(Collectors.toList());
     }
 
@@ -316,7 +314,7 @@ public class KeywordExtractor implements NLPExtractor {
         return candidateSentences;
     }
 
-    private List<Sentence> generateSummarySentences(List<String> sentences) {
+    public List<Sentence> generateSummarySentences(List<String> sentences) {
         float[][] textGraph = generateTextGraph(sentences);
         float[] sentenceScores = calculateScoreByTextRank(textGraph);
         int idx = 0;
@@ -423,10 +421,6 @@ public class KeywordExtractor implements NLPExtractor {
             }
             return score;
         }).mapToDouble(x -> x).average().orElse(0);
-    }
-
-    private String removeNumPrefix(String sentence) {
-        return NUM_PREFIX_PATTERN.matcher(sentence).replaceFirst("");
     }
 
 }
