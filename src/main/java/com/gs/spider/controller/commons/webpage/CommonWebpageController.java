@@ -3,6 +3,7 @@ package com.gs.spider.controller.commons.webpage;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.gs.spider.model.commons.Webpage;
+import com.gs.spider.model.utils.ClozeResult;
 import com.gs.spider.model.utils.FileInfo;
 import com.gs.spider.model.utils.QuestionSetInfo;
 import com.gs.spider.model.utils.ResultBundle;
@@ -366,40 +367,12 @@ public class CommonWebpageController {
         }
     }
 
-    @RequestMapping(value = "getKeyQuestion", method = RequestMethod.POST)
-    public void getKeyQuestion(@RequestBody QuestionSetInfo questionSetInfo, HttpServletResponse response) {
+    @RequestMapping(value = "getKeyQuestion", method = RequestMethod.POST, produces = "application/json")
+    @ResponseBody
+    public List<ClozeResult> getKeyQuestion(@RequestBody QuestionSetInfo questionSetInfo) {
         String content = questionSetInfo.getContent();
         int num = questionSetInfo.getNum();
-        String result = webpageService.getKeyQuestion(content, num);
-
-        BufferedOutputStream buff = null;
-        OutputStream out = null;
-        try {
-            response.setContentType("text/plain");
-            response.setHeader("Content-Disposition", "attachment;filename=keyQuestion.txt");
-            out = response.getOutputStream();
-            buff = new BufferedOutputStream(out);
-            buff.write(result.getBytes(StandardCharsets.UTF_8));
-            buff.flush();
-            buff.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (buff != null) {
-                try {
-                    buff.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
+        List<ClozeResult> result = webpageService.getKeyQuestion(content, num);
+        return result;
     }
 }

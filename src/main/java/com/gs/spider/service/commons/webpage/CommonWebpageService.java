@@ -6,6 +6,7 @@ import com.gs.spider.gather.commons.CommonSpider;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
 import com.gs.spider.model.commons.WebpageWithHighlight;
+import com.gs.spider.model.utils.ClozeResult;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
@@ -420,8 +421,8 @@ public class CommonWebpageService {
         return StringUtils.join(info, "\n");
     }
 
-    public String getKeyQuestion(String content, int num) {
-        return StringUtils.join(clozeExtractor.extractKeyQuestionResult(content, num), "\n");
+    public List<ClozeResult> getKeyQuestion(String content, int num) {
+        return clozeExtractor.extractKeyQuestionResult(content, num);
     }
 
 }
