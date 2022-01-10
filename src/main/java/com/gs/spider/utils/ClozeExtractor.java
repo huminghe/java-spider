@@ -157,18 +157,20 @@ public class ClozeExtractor {
             JSONObject jsonObject = JSON.parseObject(entityString);
             JSONArray jsonArray = jsonObject.getJSONArray("result");
             LOG.info("result: " + jsonArray);
-            int size = jsonArray.size();
-            for (int i = 0; i < size; i++) {
-                List<String> words = new LinkedList<>();
-                JSONArray subArray = jsonArray.getJSONArray(i);
-                int subSize = subArray.size();
-                for (int j = 0; j < subSize; j++) {
-                    NerResult r = subArray.getObject(j, NerResult.class);
-                    if (r != null && r.getCategory() == 1) {
-                        words.add(r.getWord());
+            if (jsonArray != null) {
+                int size = jsonArray.size();
+                for (int i = 0; i < size; i++) {
+                    List<String> words = new LinkedList<>();
+                    JSONArray subArray = jsonArray.getJSONArray(i);
+                    int subSize = subArray.size();
+                    for (int j = 0; j < subSize; j++) {
+                        NerResult r = subArray.getObject(j, NerResult.class);
+                        if (r != null && r.getCategory() == 1) {
+                            words.add(r.getWord());
+                        }
                     }
+                    batchResults.add(words);
                 }
-                batchResults.add(words);
             }
         } catch (Exception e) {
             e.printStackTrace();
