@@ -12,6 +12,7 @@ import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.utils.ClozeExtractor;
 import com.gs.spider.utils.NlpUtil;
+import com.gs.spider.utils.RelationExtractionCorpusGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -287,49 +288,6 @@ public class CommonWebpageService {
         return sb.toString();
     }
 
-    @Deprecated
-    public String getNerCorpus(String domain, int size, int page, int numPerDoc) {
-        int idx = 1;
-        boolean notFinished = true;
-        BufferedWriter writer = null;
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/ner_corpus_new/" + domain + ".txt"), StandardCharsets.UTF_8));
-            BufferedWriter finalWriter = writer;
-            while (idx <= page && notFinished) {
-                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
-                idx++;
-                notFinished = webpages.size() >= size;
-                webpages.stream().map(webpage -> {
-                    String content = webpage.getContentCleaned();
-                    List<String> sentences = NlpUtil.toSentences(content, 64);
-                    Collections.shuffle(sentences);
-                    return sentences;
-                })
-                    .forEach(sentences -> sentences.stream()
-                        .filter(s -> s.length() > 15)
-                        .limit(numPerDoc).forEach(s -> {
-                            try {
-                                finalWriter.write(s);
-                                finalWriter.newLine();
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-                        }));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (Exception ee) {
-                    ee.printStackTrace();
-                }
-            }
-        }
-        return "success";
-    }
-
     public String getCorpusNew(String domain, int size, int page) {
         int idx = 1;
         boolean notFinished = true;
@@ -345,45 +303,6 @@ public class CommonWebpageService {
                 });
         }
         return sb.toString();
-    }
-
-    @Deprecated
-    public String getCorpus(String domain, int size, int page, int numPerDoc) {
-        int idx = 1;
-        boolean notFinished = true;
-        BufferedWriter writer = null;
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/corpus_new/" + domain + ".txt"), StandardCharsets.UTF_8));
-            BufferedWriter finalWriter = writer;
-            while (idx <= page && notFinished) {
-                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
-                idx++;
-                notFinished = webpages.size() >= size;
-                webpages.stream().map(webpage -> {
-                    String content = webpage.getContentCleaned();
-                    return content;
-                })
-                    .forEach(s -> {
-                        try {
-                            finalWriter.write(s);
-                            finalWriter.newLine();
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    });
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (Exception ee) {
-                    ee.printStackTrace();
-                }
-            }
-        }
-        return "success";
     }
 
     public String compareNlp(String domain, int size, int page) {
@@ -423,6 +342,31 @@ public class CommonWebpageService {
 
     public List<ClozeResult> getKeyQuestion(String content, int num) {
         return clozeExtractor.extractKeyQuestionResult(content, num);
+    }
+
+    public String getRelationExtractionCorpus(String domain, int size, int page, int numPerDoc) {
+        int idx = 1;
+        boolean notFinished = true;
+        StringBuffer sb = new StringBuffer();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            webpages.stream().map(webpage -> {
+                String content = webpage.getContentCleaned();
+                List<ClozeResult> nerResults = RelationExtractionCorpusGenerator.getNerResults(content);
+                Collections.shuffle(nerResults);
+                return nerResults;
+            }).forEach(ner -> {
+                ner.stream().limit(numPerDoc).forEach(n -> {
+                    sb.append(n.getContent());
+                    sb.append("\t");
+                    sb.append(n.getCloze());
+                    sb.append("\n");
+                });
+            });
+        }
+        return sb.toString();
     }
 
 }

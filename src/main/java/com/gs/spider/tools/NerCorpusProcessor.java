@@ -1,4 +1,4 @@
-package com.gs.spider.test;
+package com.gs.spider.tools;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

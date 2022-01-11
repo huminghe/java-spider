@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.gs.spider.model.commons.Webpage;
 import com.gs.spider.model.utils.ClozeResult;
-import com.gs.spider.model.utils.FileInfo;
 import com.gs.spider.model.utils.QuestionSetInfo;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
@@ -374,5 +373,40 @@ public class CommonWebpageController {
         int num = questionSetInfo.getNum();
         List<ClozeResult> result = webpageService.getKeyQuestion(content, num);
         return result;
+    }
+
+    @RequestMapping(value = "getRelationExtractionCorpus", method = RequestMethod.GET)
+    public void getRelationExtractionCorpus(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                            @RequestParam(value = "numPerDoc", required = false, defaultValue = "5") int numPerDoc,
+                                            HttpServletResponse response) {
+        String info = webpageService.getRelationExtractionCorpus(domain, 10, page, numPerDoc);
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=relationExtractionCorpus.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(info.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

@@ -2,13 +2,11 @@ package com.gs.spider.controller.commons.spiderinfo;
 
 import com.google.gson.Gson;
 import com.gs.spider.model.commons.SpiderInfo;
-import com.gs.spider.model.commons.Webpage;
 import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.service.commons.spiderinfo.SpiderInfoService;
 import com.gs.spider.service.commons.webpage.CommonWebpageService;
-import com.gs.spider.utils.TablePage;
 
 import java.util.List;
 
@@ -18,7 +16,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
 
 /**
  * SpiderInfoController
