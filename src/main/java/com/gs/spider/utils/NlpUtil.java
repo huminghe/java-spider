@@ -48,11 +48,7 @@ public class NlpUtil {
         add('\r');
         add('\b');
         add('.');
-        add('\"');
-        add('\'');
         add('”');
-        add('“');
-        add('‘');
         add('’');
         add(' ');
         add('\u00A0');
@@ -90,11 +86,7 @@ public class NlpUtil {
         add('\r');
         add('\b');
         add('.');
-        add('\"');
-        add('\'');
         add('”');
-        add('“');
-        add('‘');
         add('’');
         add(' ');
         add('\u00A0');
