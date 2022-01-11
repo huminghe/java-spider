@@ -96,12 +96,18 @@ public class ClozeExtractor {
             }
             List<ClozeResult> results = options.stream().filter(StringUtils::isNotBlank)
                 .map(option -> {
-                    int idx = StringUtils.indexOf(sentence, option);
-                    int idxRepeat = StringUtils.indexOf(sentence, option, idx + 1);
+                    String ne = option;
+                    if (ne.contains("“") && !ne.contains("”")) {
+                        ne = ne.replaceAll("“", "");
+                    } else if (ne.contains("”") && !ne.contains("“")) {
+                        ne = ne.replaceAll("”", "");
+                    }
+                    int idx = StringUtils.indexOf(sentence, ne);
+                    int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
                     if (idxRepeat >= 0) {
                         return null;
                     } else {
-                        return new ClozeResult(sentence, option, idx);
+                        return new ClozeResult(sentence, ne, idx);
                     }
                 })
                 .filter(Objects::nonNull)

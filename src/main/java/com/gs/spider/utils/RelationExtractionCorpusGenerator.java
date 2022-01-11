@@ -42,6 +42,11 @@ public class RelationExtractionCorpusGenerator {
                 if (wordsNum > 0) {
                     int idx = RandomUtils.nextInt(0, wordsNum);
                     String ne = words.get(idx);
+                    if (ne.contains("“") && !ne.contains("”")) {
+                        ne = ne.replaceAll("“", "");
+                    } else if (ne.contains("”") && !ne.contains("“")) {
+                        ne = ne.replaceAll("”", "");
+                    }
                     ClozeResult result = new ClozeResult(sen, ne, 0);
                     resultList.add(result);
                 }
