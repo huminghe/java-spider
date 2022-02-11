@@ -1,6 +1,7 @@
 package com.gs.spider.utils;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.kernel.colors.ColorConstants;
@@ -31,6 +32,8 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
@@ -50,9 +53,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -133,21 +138,33 @@ public class PdfUtil {
                 .setConnectionRequestTimeout(350000)// 设置连接请求超时时间
                 .setSocketTimeout(60000)// 设置读取数据连接超时时间
                 .build();
+
             // 为httpPost实例设置配置
             httpPost.setConfig(requestConfig);
-            // 设置请求头
-            // httpPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
-            // 封装post请求参数
-            List<NameValuePair> nvps = new ArrayList<NameValuePair>();
-            nvps.add(new BasicNameValuePair("ImgString", str));
-            httpPost.setEntity(new UrlEncodedFormEntity(nvps, "UTF-8"));
+
+            JSONObject params = new JSONObject();
+            List<String> keyList = new LinkedList<>();
+            keyList.add("image");
+            params.put("key", keyList);
+            List<String> imageList = new LinkedList<>();
+            imageList.add(str);
+            params.put("value", imageList);
+            StringEntity s = new StringEntity(params.toJSONString());
+            httpPost.setEntity(s);
+
             // httpClient对象执行post请求,并返回响应参数对象
             httpResponse = httpClient.execute(httpPost);
             // 从响应对象中获取响应内容
             HttpEntity entity = httpResponse.getEntity();
-            String entityString = EntityUtils.toString(entity);
+            String entityString = EntityUtils.toString(entity, "utf-8");
+            logger.info("entity response: " + entityString);
             JSONObject jsonObject = JSON.parseObject(entityString);
-            result = jsonObject.getString("text");
+            JSONArray jsonResult = jsonObject.getJSONArray("value");
+            String valueString = jsonResult.getString(0);
+            JSONArray ja = JSON.parseArray(valueString);
+            StringBuilder sb = new StringBuilder();
+            ja.forEach(sb::append);
+            result = sb.toString();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

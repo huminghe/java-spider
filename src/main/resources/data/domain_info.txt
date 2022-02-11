@@ -31,3 +31,5 @@ sce.ruc.edu.cn	中国人民大学继续教育学院
 mp.weixin.qq.com	党校公开课
 fileSystem	内部资料
 www.chinagwy.org	公考资讯网
+www.sgcc.com.cn	国家电网
+www.12371.cn	共产党员网

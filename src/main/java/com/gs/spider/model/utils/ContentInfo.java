@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class QuestionSetInfo {
+public class ContentInfo {
     private String content;
     private int num;
 }

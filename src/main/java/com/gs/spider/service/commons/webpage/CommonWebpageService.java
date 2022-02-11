@@ -11,6 +11,7 @@ import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.utils.ClozeExtractor;
+import com.gs.spider.utils.KeywordExtractor;
 import com.gs.spider.utils.NlpUtil;
 import com.gs.spider.utils.RelationExtractionCorpusGenerator;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +49,8 @@ public class CommonWebpageService {
     private CommonSpider commonSpider;
     @Autowired
     private ClozeExtractor clozeExtractor;
+    @Autowired
+    private KeywordExtractor keywordExtractor;
 
     /**
      * 根据spiderUUID返回该spider抓取到的文章
@@ -340,8 +343,16 @@ public class CommonWebpageService {
         return StringUtils.join(info, "\n");
     }
 
+    public List<ClozeResult> getSentenceKeyQuestion(List<String> sentences, int num) {
+        return clozeExtractor.extractSentenceKeyQuestion(sentences, num);
+    }
+
     public List<ClozeResult> getKeyQuestion(String content, int num) {
         return clozeExtractor.extractKeyQuestionResult(content, num);
+    }
+
+    public List<String> getSummary(String content, int num) {
+        return keywordExtractor.extractSummary(content, num);
     }
 
     public String getRelationExtractionCorpus(String domain, int size, int page, int numPerDoc) {
@@ -367,6 +378,49 @@ public class CommonWebpageService {
             });
         }
         return sb.toString();
+    }
+
+    public String writeRelationExtractionCorpus(String domain, int size, int page, int numPerDoc) {
+        int idx = 1;
+        boolean notFinished = true;
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/data/huminghe/tmp2/relation_extraction/" + domain + ".txt"), StandardCharsets.UTF_8));
+            BufferedWriter finalWriter = writer;
+            while (idx <= page && notFinished) {
+                List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
+                idx++;
+                notFinished = webpages.size() >= size;
+                webpages.stream().map(webpage -> {
+                    String content = webpage.getContentCleaned();
+                    List<ClozeResult> nerResults = RelationExtractionCorpusGenerator.getNerResults(content);
+                    Collections.shuffle(nerResults);
+                    return nerResults;
+                })
+                    .forEach(ner -> ner.stream()
+                        .limit(numPerDoc).forEach(n -> {
+                            try {
+                                finalWriter.write(n.getContent());
+                                finalWriter.write("\t");
+                                finalWriter.write(n.getCloze());
+                                finalWriter.newLine();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (Exception ee) {
+                    ee.printStackTrace();
+                }
+            }
+        }
+        return "success";
     }
 
 }

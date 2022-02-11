@@ -19,5 +19,5 @@
   "internalFileStorePrefix": "/Users/huminghe/Documents/tmp/0811/tmp",
   "pdfFontPath": "/Users/huminghe/Documents/tmp/0811/msyh.ttf",
   "wordVectorsPath": "/Users/huminghe/Documents/tmp/0721/word_vecs_tencent.txt",
-  "ocrApi": "http://0.0.0.0:5000/api/v1/ocr"
+  "ocrApi": "http://127.0.0.1:9998/ocr/prediction"
 }

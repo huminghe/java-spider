@@ -59,6 +59,62 @@ public class ClozeExtractor {
         keyQuestionFilter = new AhoCorasickMatcher<>(keyQuestionFilterWords.stream().collect(Collectors.toMap(x -> x, x -> true)));
     }
 
+    public List<ClozeResult> extractSentenceKeyQuestion(List<String> sentences, int num) {
+        List<ClozeResult> keyQuestionResults = new LinkedList<>();
+        List<String> topList = sentences;
+        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 62).stream()).collect(Collectors.toList());
+
+        List<List<String>> nerResults = batchFetchNerResults(subSentenceList);
+        int startIdx = 0;
+        int endIdx = 0;
+        for (String sentence : topList) {
+            List<String> subSentence = NlpUtil.toSentences(sentence, 62);
+            endIdx = endIdx + subSentence.size();
+            List<String> nerList = new LinkedList<>();
+            for (int i = startIdx; i < endIdx; i++) {
+                nerList.addAll(nerResults.get(i));
+            }
+            startIdx = endIdx;
+
+            Set<String> options = new HashSet<>(generatePiecesRule1(sentence));
+            options.addAll(generatePiecesRule2(sentence));
+            if (!nerList.isEmpty()) {
+                String namedEntity = nerList.stream().max(Comparator.comparingInt(String::length)).get();
+                options.add(namedEntity);
+            }
+            List<String> namedEntities = nerList.stream()
+                .filter(w -> w.length() >= 6)
+                .collect(Collectors.toList());
+            options.addAll(namedEntities);
+            String numOption = generatePiecesRule3(sentence);
+            boolean notContainNum = options.stream().noneMatch(x -> x.contains(numOption));
+            if (notContainNum) {
+                options.add(generatePiecesRule3(sentence));
+            }
+            List<ClozeResult> results = options.stream().filter(StringUtils::isNotBlank)
+                .map(option -> {
+                    String ne = option;
+                    if (ne.contains("“") && !ne.contains("”")) {
+                        ne = ne.replaceAll("“", "");
+                    } else if (ne.contains("”") && !ne.contains("“")) {
+                        ne = ne.replaceAll("”", "");
+                    }
+                    int idx = StringUtils.indexOf(sentence, ne);
+                    int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
+                    if (idxRepeat >= 0) {
+                        return null;
+                    } else {
+                        return new ClozeResult(sentence, ne, idx);
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            keyQuestionResults.addAll(results);
+        }
+
+        return keyQuestionResults.stream().limit(num).collect(Collectors.toList());
+    }
+
     public List<ClozeResult> extractKeyQuestionResult(String content, int num) {
         List<ClozeResult> keyQuestionResults = new LinkedList<>();
 
@@ -279,6 +335,7 @@ public class ClozeExtractor {
     }
 
     private boolean verifyPhrase(String word1, String word2) {
+        /*
         if (word1.length() == word2.length()) {
             for (int i = 0; i < word1.length(); i++) {
                 if (word1.substring(i, i + 1).equals(word2.substring(i, i + 1))) {
@@ -287,6 +344,8 @@ public class ClozeExtractor {
             }
         }
         return false;
+        */
+        return word1.length() == word2.length();
     }
 
     private List<String> generatePiecesRule1(String sentence) {

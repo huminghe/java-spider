@@ -4,10 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.gs.spider.model.commons.Webpage;
 import com.gs.spider.model.utils.ClozeResult;
-import com.gs.spider.model.utils.QuestionSetInfo;
+import com.gs.spider.model.utils.ContentInfo;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
+import com.gs.spider.model.utils.SentencesInfo;
 import com.gs.spider.service.commons.webpage.CommonWebpageService;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -366,13 +368,31 @@ public class CommonWebpageController {
         }
     }
 
+    @RequestMapping(value = "getSentenceKeyQuestion", method = RequestMethod.POST, produces = "application/json")
+    @ResponseBody
+    public List<ClozeResult> getSentenceKeyQuestion(@RequestBody SentencesInfo contentInfo) {
+        List<String> sentences = contentInfo.getSentences();
+        int num = contentInfo.getNum();
+        List<ClozeResult> result = webpageService.getSentenceKeyQuestion(sentences, num);
+        return result;
+    }
+
     @RequestMapping(value = "getKeyQuestion", method = RequestMethod.POST, produces = "application/json")
     @ResponseBody
-    public List<ClozeResult> getKeyQuestion(@RequestBody QuestionSetInfo questionSetInfo) {
-        String content = questionSetInfo.getContent();
-        int num = questionSetInfo.getNum();
+    public List<ClozeResult> getKeyQuestion(@RequestBody ContentInfo contentInfo) {
+        String content = contentInfo.getContent();
+        int num = contentInfo.getNum();
         List<ClozeResult> result = webpageService.getKeyQuestion(content, num);
         return result;
+    }
+
+    @RequestMapping(value = "getSummary", method = RequestMethod.POST, produces = "application/json")
+    @ResponseBody
+    public String getSummary(@RequestBody ContentInfo contentInfo) {
+        String content = contentInfo.getContent();
+        int num = contentInfo.getNum();
+        List<String> summarySentences = webpageService.getSummary(content, num);
+        return StringUtils.join(summarySentences, " ");
     }
 
     @RequestMapping(value = "getRelationExtractionCorpus", method = RequestMethod.GET)
@@ -409,4 +429,12 @@ public class CommonWebpageController {
             }
         }
     }
+
+    @RequestMapping(value = "writeRelationExtraction", method = RequestMethod.GET)
+    @ResponseBody
+    public String writeRelationExtraction(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                          @RequestParam(value = "numPerDoc", required = false, defaultValue = "5") int numPerDoc) {
+        return webpageService.writeRelationExtractionCorpus(domain, 10, page, numPerDoc);
+    }
+
 }

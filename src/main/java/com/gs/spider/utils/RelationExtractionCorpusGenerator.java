@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author huminghe
@@ -31,7 +32,10 @@ public class RelationExtractionCorpusGenerator {
 
     public static List<ClozeResult> getNerResults(String content) {
         List<ClozeResult> resultList = new LinkedList<>();
-        List<String> sentences = NlpUtil.toSentences(content, 64);
+        List<String> sentences = NlpUtil.toSentence(content)
+            .stream()
+            .map(String::trim)
+            .filter(s -> s.length() > 32 && s.length() < 75).collect(Collectors.toList());
         int size = sentences.size();
         if (size > 0) {
             List<List<String>> nerResults = batchFetchNerResults(sentences);
@@ -102,7 +106,7 @@ public class RelationExtractionCorpusGenerator {
                         if (r != null) {
                             if (r.getCategory() == 1) {
                                 words.add(r.getWord());
-                            } else if (r.getCategory() >= 2 && RandomUtils.nextDouble(0, 1) >= 0.6) {
+                            } else if (r.getCategory() >= 2 && RandomUtils.nextDouble(0, 1) >= 0.7) {
                                 words.add(r.getWord());
                             }
                         }

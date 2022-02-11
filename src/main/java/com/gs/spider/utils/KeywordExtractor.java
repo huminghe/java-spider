@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -102,9 +101,13 @@ public class KeywordExtractor implements NLPExtractor {
 
     @Override
     public List<String> extractSummary(String content) {
+        return extractSummary(content, 6);
+    }
+
+    public List<String> extractSummary(String content, int num) {
         List<String> candidateSentences = generateCandidateSentences(content);
         List<Sentence> summarySentences = generateSummarySentences(candidateSentences);
-        return summarySentences.stream().limit(6)
+        return summarySentences.stream().limit(num)
             .sorted(Comparator.comparingInt(Sentence::getIdx))
             .map(Sentence::getSentence)
             .map(NlpUtil::removeNumPrefix)
