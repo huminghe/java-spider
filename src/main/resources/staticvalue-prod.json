@@ -19,5 +19,6 @@
   "internalFileStorePrefix": "/home/atc/lg/files/store",
   "pdfFontPath": "/home/atc/lg/data/msyh.ttf",
   "wordVectorsPath": "/home/atc/lg/data/word_vecs_tencent.txt",
-  "ocrApi": "http://127.0.0.1:9998/ocr/prediction"
+  "ocrApi": "http://127.0.0.1:9998/ocr/prediction",
+  "nerApi": "http://0.0.0.0:7765/v2/ner_mix"
 }

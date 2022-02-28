@@ -6,7 +6,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.gs.spider.model.utils.ClozeResult;
 import com.gs.spider.model.utils.NerResult;
 import com.gs.spider.model.utils.Sentence;
-import com.hankcs.hanlp.seg.common.Term;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -62,13 +60,13 @@ public class ClozeExtractor {
     public List<ClozeResult> extractSentenceKeyQuestion(List<String> sentences, int num) {
         List<ClozeResult> keyQuestionResults = new LinkedList<>();
         List<String> topList = sentences;
-        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 62).stream()).collect(Collectors.toList());
+        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 126).stream()).collect(Collectors.toList());
 
         List<List<String>> nerResults = batchFetchNerResults(subSentenceList);
         int startIdx = 0;
         int endIdx = 0;
         for (String sentence : topList) {
-            List<String> subSentence = NlpUtil.toSentences(sentence, 62);
+            List<String> subSentence = NlpUtil.toSentences(sentence, 126);
             endIdx = endIdx + subSentence.size();
             List<String> nerList = new LinkedList<>();
             for (int i = startIdx; i < endIdx; i++) {
@@ -76,16 +74,23 @@ public class ClozeExtractor {
             }
             startIdx = endIdx;
 
-            Set<String> options = new HashSet<>(generatePiecesRule1(sentence));
+            List<String> options = generatePiecesRule1(sentence);
             options.addAll(generatePiecesRule2(sentence));
             if (!nerList.isEmpty()) {
                 String namedEntity = nerList.stream().max(Comparator.comparingInt(String::length)).get();
-                options.add(namedEntity);
+                if (entityIndependent(sentence, namedEntity) && !wordDuplicateWithList(options, namedEntity)) {
+                    options.add(namedEntity);
+                }
             }
             List<String> namedEntities = nerList.stream()
-                .filter(w -> w.length() >= 6)
+                .filter(w -> w.length() >= 4)
+                .filter(w -> entityIndependent(sentence, w))
                 .collect(Collectors.toList());
-            options.addAll(namedEntities);
+            for (String word : namedEntities) {
+                if (!wordDuplicateWithList(options, word)) {
+                    options.add(word);
+                }
+            }
             String numOption = generatePiecesRule3(sentence);
             boolean notContainNum = options.stream().noneMatch(x -> x.contains(numOption));
             if (notContainNum) {
@@ -101,11 +106,7 @@ public class ClozeExtractor {
                     }
                     int idx = StringUtils.indexOf(sentence, ne);
                     int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
-                    if (idxRepeat >= 0) {
-                        return null;
-                    } else {
-                        return new ClozeResult(sentence, ne, idx);
-                    }
+                    return new ClozeResult(sentence, ne, idx);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -121,13 +122,13 @@ public class ClozeExtractor {
         List<String> keyQuestionCandidates = extractKeyQuestionCandidates(content);
 
         List<String> topList = keyQuestionCandidates.stream().limit(num).collect(Collectors.toList());
-        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 62).stream()).collect(Collectors.toList());
+        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 126).stream()).collect(Collectors.toList());
 
         List<List<String>> nerResults = batchFetchNerResults(subSentenceList);
         int startIdx = 0;
         int endIdx = 0;
         for (String sentence : topList) {
-            List<String> subSentence = NlpUtil.toSentences(sentence, 62);
+            List<String> subSentence = NlpUtil.toSentences(sentence, 126);
             endIdx = endIdx + subSentence.size();
             List<String> nerList = new LinkedList<>();
             for (int i = startIdx; i < endIdx; i++) {
@@ -135,16 +136,23 @@ public class ClozeExtractor {
             }
             startIdx = endIdx;
 
-            Set<String> options = new HashSet<>(generatePiecesRule1(sentence));
+            List<String> options = generatePiecesRule1(sentence);
             options.addAll(generatePiecesRule2(sentence));
             if (!nerList.isEmpty()) {
                 String namedEntity = nerList.stream().max(Comparator.comparingInt(String::length)).get();
-                options.add(namedEntity);
+                if (entityIndependent(sentence, namedEntity) && !wordDuplicateWithList(options, namedEntity)) {
+                    options.add(namedEntity);
+                }
             }
             List<String> namedEntities = nerList.stream()
-                .filter(w -> w.length() >= 6)
+                .filter(w -> w.length() >= 4)
+                .filter(w -> entityIndependent(sentence, w))
                 .collect(Collectors.toList());
-            options.addAll(namedEntities);
+            for (String word : namedEntities) {
+                if (!wordDuplicateWithList(options, word)) {
+                    options.add(word);
+                }
+            }
             String numOption = generatePiecesRule3(sentence);
             boolean notContainNum = options.stream().noneMatch(x -> x.contains(numOption));
             if (notContainNum) {
@@ -160,11 +168,7 @@ public class ClozeExtractor {
                     }
                     int idx = StringUtils.indexOf(sentence, ne);
                     int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
-                    if (idxRepeat >= 0) {
-                        return null;
-                    } else {
-                        return new ClozeResult(sentence, ne, idx);
-                    }
+                    return new ClozeResult(sentence, ne, idx);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -175,7 +179,7 @@ public class ClozeExtractor {
     }
 
     public List<String> extractKeyQuestionCandidates(String content) {
-        List<String> candidateSentences = generateKeyQuestionSentences(content);
+        List<String> candidateSentences = generateKeyQuestionSentencesV2(content);
         List<Sentence> keyQuestionSentences = keywordExtractor.generateSummarySentences(candidateSentences);
         return keyQuestionSentences.stream()
             .map(Sentence::getSentence)
@@ -192,7 +196,7 @@ public class ClozeExtractor {
             // 创建httpClient实例
             httpClient = HttpClients.createDefault();
             // 创建httpPost远程连接实例
-            HttpPost httpPost = new HttpPost("http://0.0.0.0:7765/v1/ner_all");
+            HttpPost httpPost = new HttpPost(StaticValue.nerApi);
             // 配置请求参数实例
             RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(350000)// 设置连接主机服务超时时间
                 .setConnectionRequestTimeout(350000)// 设置连接请求超时时间
@@ -334,6 +338,39 @@ public class ClozeExtractor {
         return candidateSentences;
     }
 
+    private List<String> generateKeyQuestionSentencesV2(String content) {
+        List<String> sentences = NlpUtil.toSentence(content);
+        List<String> candidateSentences = sentences
+            .stream()
+            .filter(x -> x.length() > 10)
+            .collect(Collectors.toList());
+        return candidateSentences;
+    }
+
+    private boolean entityIndependent(String content, String entity) {
+        int idx = StringUtils.indexOf(content, entity);
+        int length = content.length();
+        int entityLength = entity.length();
+        String left = "";
+        String right = "";
+        if (0 < idx) {
+            left = content.substring(idx - 1, idx);
+        }
+        if (idx + entityLength < length) {
+            right = content.substring(idx + entityLength, idx + entityLength + 1);
+        }
+        return !left.contains("、") && !right.contains("、");
+    }
+
+    private boolean wordDuplicateWithList(List<String> wordList, String word) {
+        if (wordList.isEmpty()) {
+            return false;
+        } else {
+            return wordList.stream().map(w -> w.contains(word) || word.contains(w))
+                .reduce((a, b) -> a || b).orElse(false);
+        }
+    }
+
     private boolean verifyPhrase(String word1, String word2) {
         /*
         if (word1.length() == word2.length()) {
@@ -345,7 +382,7 @@ public class ClozeExtractor {
         }
         return false;
         */
-        return word1.length() == word2.length();
+        return word1.length() == word2.length() && word1.length() >= 2;
     }
 
     private List<String> generatePiecesRule1(String sentence) {
