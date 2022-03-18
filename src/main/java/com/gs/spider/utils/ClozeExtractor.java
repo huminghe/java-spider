@@ -385,6 +385,38 @@ public class ClozeExtractor {
         return word1.length() == word2.length() && word1.length() >= 2;
     }
 
+    private String getTailWord(String word, String tail) {
+        int len = word.length();
+        String wordLastChar = word.substring(len - 1, len);
+        List<Integer> tailEndList = KeywordExtractor.hanlpSegment.seg(tail)
+            .stream()
+            .map(t -> t.offset + t.length()).collect(Collectors.toList());
+        if (tail.length() >= len && tailEndList.contains(len)) {
+            String tailWord = tail.substring(0, len);
+            String afterTailWordPart = tail.substring(len);
+            int afterLength = Math.min(afterTailWordPart.length(), 2);
+            String afterWord = afterTailWordPart.substring(0, afterLength);
+            if (verifyPhrase(tailWord, word) && !afterWord.contains(wordLastChar)) {
+                return tailWord;
+            }
+        }
+        return "";
+    }
+
+    private String getHeadWord(String word, String head) {
+        int len = word.length();
+        List<Integer> headOffsetList = KeywordExtractor.hanlpSegment.seg(head)
+            .stream()
+            .map(t -> t.offset).collect(Collectors.toList());
+        if (head.length() >= len && headOffsetList.contains(head.length() - len)) {
+            String headWord = head.substring(head.length() - len);
+            if (verifyPhrase(headWord, word)) {
+                return headWord;
+            }
+        }
+        return "";
+    }
+
     private List<String> generatePiecesRule1(String sentence) {
         String[] outerArr = sentence.split("，");
         List<String> optionList = Arrays.stream(outerArr).map(sen -> {
@@ -393,7 +425,8 @@ public class ClozeExtractor {
             if (arr.length > 3) {
                 List<String> options = Arrays.stream(arr).limit(arr.length - 1).skip(1).collect(Collectors.toList());
                 boolean sameLength = true;
-                int len = arr[1].length();
+                String wordSelected = arr[1];
+                int len = wordSelected.length();
                 for (String op : options) {
                     if (len != op.length()) {
                         sameLength = false;
@@ -402,48 +435,29 @@ public class ClozeExtractor {
                 if (sameLength) {
                     String head = arr[0];
                     String tail = arr[arr.length - 1];
-                    List<Integer> headOffsetList = KeywordExtractor.hanlpSegment.seg(head)
-                        .stream()
-                        .map(t -> t.offset).collect(Collectors.toList());
-                    if (head.length() >= len && headOffsetList.contains(head.length() - len)) {
-                        String headWord = head.substring(head.length() - len);
-                        if (verifyPhrase(headWord, arr[1])) {
-                            resultWordList.add(headWord);
-                        }
+                    String headWord = getHeadWord(wordSelected, head);
+                    if (!headWord.isEmpty()) {
+                        resultWordList.add(headWord);
                     }
                     resultWordList.addAll(options);
-                    List<Integer> tailEndList = KeywordExtractor.hanlpSegment.seg(tail)
-                        .stream()
-                        .map(t -> t.offset + t.length()).collect(Collectors.toList());
-                    if (tail.length() >= len && tailEndList.contains(len)) {
-                        String tailWord = tail.substring(0, len);
-                        if (verifyPhrase(tailWord, arr[1])) {
-                            resultWordList.add(tailWord);
-                        }
+                    String tailWord = getTailWord(wordSelected, tail);
+                    if (!tailWord.isEmpty()) {
+                        resultWordList.add(tailWord);
                     }
                 }
             } else if (arr.length > 2) {
-                int len = arr[1].length();
+                String wordSelected = arr[1];
+                int len = wordSelected.length();
                 String head = arr[0];
                 String tail = arr[arr.length - 1];
-                List<Integer> headOffsetList = KeywordExtractor.hanlpSegment.seg(head)
-                    .stream()
-                    .map(t -> t.offset).collect(Collectors.toList());
-                if (head.length() >= len && headOffsetList.contains(head.length() - len)) {
-                    String headWord = head.substring(head.length() - len);
-                    if (verifyPhrase(headWord, arr[1])) {
-                        resultWordList.add(headWord);
-                    }
+                String headWord = getHeadWord(wordSelected, head);
+                if (!headWord.isEmpty()) {
+                    resultWordList.add(headWord);
                 }
-                resultWordList.add(arr[1]);
-                List<Integer> tailEndList = KeywordExtractor.hanlpSegment.seg(tail)
-                    .stream()
-                    .map(t -> t.offset + t.length()).collect(Collectors.toList());
-                if (tail.length() >= len && tailEndList.contains(len)) {
-                    String tailWord = tail.substring(0, len);
-                    if (verifyPhrase(tailWord, arr[1])) {
-                        resultWordList.add(tailWord);
-                    }
+                resultWordList.add(wordSelected);
+                String tailWord = getTailWord(wordSelected, tail);
+                if (!tailWord.isEmpty()) {
+                    resultWordList.add(tailWord);
                 }
             }
             if (resultWordList.size() > 2) {
