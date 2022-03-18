@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.gs.spider.model.utils.ClozeResult;
 import com.gs.spider.model.utils.NerResult;
 import com.gs.spider.model.utils.Sentence;
+import com.hankcs.hanlp.seg.common.Term;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -76,15 +77,18 @@ public class ClozeExtractor {
 
             List<String> options = generatePiecesRule1(sentence);
             options.addAll(generatePiecesRule2(sentence));
-            if (!nerList.isEmpty()) {
-                String namedEntity = nerList.stream().max(Comparator.comparingInt(String::length)).get();
-                if (entityIndependent(sentence, namedEntity) && !wordDuplicateWithList(options, namedEntity)) {
-                    options.add(namedEntity);
-                }
-            }
+            int maxLen = nerList.isEmpty() ? 10 : nerList.stream().max(Comparator.comparingInt(String::length)).get().length();
+            List<Term> segResultList = KeywordExtractor.hanlpSegment.seg(sentence);
+            List<Integer> offsetList = segResultList.stream().map(t -> t.offset).collect(Collectors.toList());
+            List<Integer> endList = segResultList.stream().map(t -> t.offset + t.length()).collect(Collectors.toList());
             List<String> namedEntities = nerList.stream()
-                .filter(w -> w.length() >= 4)
+                .filter(w -> w.length() >= maxLen || w.length() >= 4)
                 .filter(w -> entityIndependent(sentence, w))
+                .filter(w -> {
+                    int idx = StringUtils.indexOf(sentence, w);
+                    int end = idx + w.length();
+                    return offsetList.contains(idx) && endList.contains(end);
+                })
                 .collect(Collectors.toList());
             for (String word : namedEntities) {
                 if (!wordDuplicateWithList(options, word)) {
@@ -144,9 +148,18 @@ public class ClozeExtractor {
                     options.add(namedEntity);
                 }
             }
+            int maxLen = nerList.isEmpty() ? 10 : nerList.stream().max(Comparator.comparingInt(String::length)).get().length();
+            List<Term> segResultList = KeywordExtractor.hanlpSegment.seg(sentence);
+            List<Integer> offsetList = segResultList.stream().map(t -> t.offset).collect(Collectors.toList());
+            List<Integer> endList = segResultList.stream().map(t -> t.offset + t.length()).collect(Collectors.toList());
             List<String> namedEntities = nerList.stream()
-                .filter(w -> w.length() >= 4)
+                .filter(w -> w.length() >= maxLen || w.length() >= 4)
                 .filter(w -> entityIndependent(sentence, w))
+                .filter(w -> {
+                    int idx = StringUtils.indexOf(sentence, w);
+                    int end = idx + w.length();
+                    return offsetList.contains(idx) && endList.contains(end);
+                })
                 .collect(Collectors.toList());
             for (String word : namedEntities) {
                 if (!wordDuplicateWithList(options, word)) {
@@ -447,7 +460,6 @@ public class ClozeExtractor {
                 }
             } else if (arr.length > 2) {
                 String wordSelected = arr[1];
-                int len = wordSelected.length();
                 String head = arr[0];
                 String tail = arr[arr.length - 1];
                 String headWord = getHeadWord(wordSelected, head);
