@@ -60,13 +60,12 @@ public class ClozeExtractor {
 
     public List<ClozeResult> extractSentenceKeyQuestion(List<String> sentences, int num) {
         List<ClozeResult> keyQuestionResults = new LinkedList<>();
-        List<String> topList = sentences;
-        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 126).stream()).collect(Collectors.toList());
+        List<String> subSentenceList = sentences.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 126).stream()).collect(Collectors.toList());
 
         List<List<String>> nerResults = batchFetchNerResults(subSentenceList);
         int startIdx = 0;
         int endIdx = 0;
-        for (String sentence : topList) {
+        for (String sentence : sentences) {
             List<String> subSentence = NlpUtil.toSentences(sentence, 126);
             endIdx = endIdx + subSentence.size();
             List<String> nerList = new LinkedList<>();
@@ -97,21 +96,13 @@ public class ClozeExtractor {
             }
             String numOption = generatePiecesRule3(sentence);
             boolean notContainNum = options.stream().noneMatch(x -> x.contains(numOption));
-            if (notContainNum) {
-                options.add(generatePiecesRule3(sentence));
+            int numOptionStart = StringUtils.indexOf(sentence, numOption);
+            int numOptionEnd = numOptionStart + numOption.length();
+            if (notContainNum && offsetList.contains(numOptionStart) && endList.contains(numOptionEnd)) {
+                options.add(numOption);
             }
             List<ClozeResult> results = options.stream().filter(StringUtils::isNotBlank)
-                .map(option -> {
-                    String ne = option;
-                    if (ne.contains("“") && !ne.contains("”")) {
-                        ne = ne.replaceAll("“", "");
-                    } else if (ne.contains("”") && !ne.contains("“")) {
-                        ne = ne.replaceAll("”", "");
-                    }
-                    int idx = StringUtils.indexOf(sentence, ne);
-                    int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
-                    return new ClozeResult(sentence, ne, idx);
-                })
+                .map(option -> generateClozeResult(option, sentence))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
             keyQuestionResults.addAll(results);
@@ -121,80 +112,16 @@ public class ClozeExtractor {
     }
 
     public List<ClozeResult> extractKeyQuestionResult(String content, int num) {
-        List<ClozeResult> keyQuestionResults = new LinkedList<>();
-
-        List<String> keyQuestionCandidates = extractKeyQuestionCandidates(content);
-
-        List<String> topList = keyQuestionCandidates.stream().limit(num).collect(Collectors.toList());
-        List<String> subSentenceList = topList.stream().flatMap(sentence -> NlpUtil.toSentences(sentence, 126).stream()).collect(Collectors.toList());
-
-        List<List<String>> nerResults = batchFetchNerResults(subSentenceList);
-        int startIdx = 0;
-        int endIdx = 0;
-        for (String sentence : topList) {
-            List<String> subSentence = NlpUtil.toSentences(sentence, 126);
-            endIdx = endIdx + subSentence.size();
-            List<String> nerList = new LinkedList<>();
-            for (int i = startIdx; i < endIdx; i++) {
-                nerList.addAll(nerResults.get(i));
-            }
-            startIdx = endIdx;
-
-            List<String> options = generatePiecesRule1(sentence);
-            options.addAll(generatePiecesRule2(sentence));
-            if (!nerList.isEmpty()) {
-                String namedEntity = nerList.stream().max(Comparator.comparingInt(String::length)).get();
-                if (entityIndependent(sentence, namedEntity) && !wordDuplicateWithList(options, namedEntity)) {
-                    options.add(namedEntity);
-                }
-            }
-            int maxLen = nerList.isEmpty() ? 10 : nerList.stream().max(Comparator.comparingInt(String::length)).get().length();
-            List<Term> segResultList = KeywordExtractor.hanlpSegment.seg(sentence);
-            List<Integer> offsetList = segResultList.stream().map(t -> t.offset).collect(Collectors.toList());
-            List<Integer> endList = segResultList.stream().map(t -> t.offset + t.length()).collect(Collectors.toList());
-            List<String> namedEntities = nerList.stream()
-                .filter(w -> w.length() >= maxLen || w.length() >= 4)
-                .filter(w -> entityIndependent(sentence, w))
-                .filter(w -> {
-                    int idx = StringUtils.indexOf(sentence, w);
-                    int end = idx + w.length();
-                    return offsetList.contains(idx) && endList.contains(end);
-                })
-                .collect(Collectors.toList());
-            for (String word : namedEntities) {
-                if (!wordDuplicateWithList(options, word)) {
-                    options.add(word);
-                }
-            }
-            String numOption = generatePiecesRule3(sentence);
-            boolean notContainNum = options.stream().noneMatch(x -> x.contains(numOption));
-            if (notContainNum) {
-                options.add(generatePiecesRule3(sentence));
-            }
-            List<ClozeResult> results = options.stream().filter(StringUtils::isNotBlank)
-                .map(option -> {
-                    String ne = option;
-                    if (ne.contains("“") && !ne.contains("”")) {
-                        ne = ne.replaceAll("“", "");
-                    } else if (ne.contains("”") && !ne.contains("“")) {
-                        ne = ne.replaceAll("”", "");
-                    }
-                    int idx = StringUtils.indexOf(sentence, ne);
-                    int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
-                    return new ClozeResult(sentence, ne, idx);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-            keyQuestionResults.addAll(results);
-        }
-
-        return keyQuestionResults.stream().limit(num).collect(Collectors.toList());
+        List<String> topList = extractKeyQuestionCandidates(content, num);
+        return extractSentenceKeyQuestion(topList, num);
     }
 
-    public List<String> extractKeyQuestionCandidates(String content) {
+    public List<String> extractKeyQuestionCandidates(String content, int num) {
         List<String> candidateSentences = generateKeyQuestionSentencesV2(content);
         List<Sentence> keyQuestionSentences = keywordExtractor.generateSummarySentences(candidateSentences);
         return keyQuestionSentences.stream()
+            .limit(num * 3L)
+            .sorted(Comparator.comparingInt(Sentence::getIdx))
             .map(Sentence::getSentence)
             .map(NlpUtil::removeNumPrefix)
             .collect(Collectors.toList());
@@ -360,6 +287,23 @@ public class ClozeExtractor {
         return candidateSentences;
     }
 
+    private ClozeResult generateClozeResult(String ne, String sentence) {
+        if (ne.contains("“") && !ne.contains("”")) {
+            ne = ne.replaceAll("“", "");
+        } else if (ne.contains("”") && !ne.contains("“")) {
+            ne = ne.replaceAll("”", "");
+        }
+        if (ne.contains("《") && !ne.contains("》")) {
+            ne = ne + "》";
+        }
+        if (ne.length() >= sentence.length() - 1) {
+            return null;
+        }
+        int idx = StringUtils.indexOf(sentence, ne);
+        int idxRepeat = StringUtils.indexOf(sentence, ne, idx + 1);
+        return new ClozeResult(sentence, ne, idx);
+    }
+
     private boolean entityIndependent(String content, String entity) {
         int idx = StringUtils.indexOf(content, entity);
         int length = content.length();
@@ -418,12 +362,15 @@ public class ClozeExtractor {
 
     private String getHeadWord(String word, String head) {
         int len = word.length();
+        int subLength = Math.min(len, 3);
+        String wordMiddleSeq = word.substring(1, subLength);
         List<Integer> headOffsetList = KeywordExtractor.hanlpSegment.seg(head)
             .stream()
             .map(t -> t.offset).collect(Collectors.toList());
         if (head.length() >= len && headOffsetList.contains(head.length() - len)) {
             String headWord = head.substring(head.length() - len);
-            if (verifyPhrase(headWord, word)) {
+            String headFirstChar = headWord.substring(0, 1);
+            if (verifyPhrase(headWord, word) && !wordMiddleSeq.contains(headFirstChar)) {
                 return headWord;
             }
         }
@@ -431,7 +378,7 @@ public class ClozeExtractor {
     }
 
     private List<String> generatePiecesRule1(String sentence) {
-        String[] outerArr = sentence.split("，");
+        String[] outerArr = sentence.split("[，《》；]");
         List<String> optionList = Arrays.stream(outerArr).map(sen -> {
             String[] arr = sen.split("、");
             List<String> resultWordList = new LinkedList<>();
@@ -440,6 +387,9 @@ public class ClozeExtractor {
                 boolean sameLength = true;
                 String wordSelected = arr[1];
                 int len = wordSelected.length();
+                if (len == 0) {
+                    return "";
+                }
                 for (String op : options) {
                     if (len != op.length()) {
                         sameLength = false;
@@ -460,6 +410,9 @@ public class ClozeExtractor {
                 }
             } else if (arr.length > 2) {
                 String wordSelected = arr[1];
+                if (wordSelected.length() == 0) {
+                    return "";
+                }
                 String head = arr[0];
                 String tail = arr[arr.length - 1];
                 String headWord = getHeadWord(wordSelected, head);
@@ -499,7 +452,7 @@ public class ClozeExtractor {
         while (m.find(start)) {
             String r = m.group();
             start = m.end();
-            if (!r.startsWith("一") && !r.startsWith("0") && !r.startsWith("1")) {
+            if (!r.startsWith("一") && !r.startsWith("0") && !r.startsWith("1") && r.length() < sentence.length() - 1) {
                 return r;
             }
         }

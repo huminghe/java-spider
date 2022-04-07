@@ -333,6 +333,76 @@ public class CommonWebpageController {
         }
     }
 
+    @RequestMapping(value = "getCorpusByLevel", method = RequestMethod.GET)
+    @ResponseBody
+    public void getCorpusByLevel(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                 HttpServletResponse response) {
+        String info = webpageService.getCorpusByLevel(level, 10, page);
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=rawCorpus.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(info.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @RequestMapping(value = "getTitleByLevel", method = RequestMethod.GET)
+    @ResponseBody
+    public void getTitleByLevel(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                HttpServletResponse response) {
+        String info = webpageService.getTitleByLevel(level, 10, page);
+        BufferedOutputStream buff = null;
+        OutputStream out = null;
+        try {
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment;filename=rawCorpus.txt");
+            out = response.getOutputStream();
+            buff = new BufferedOutputStream(out);
+            buff.write(info.getBytes(StandardCharsets.UTF_8));
+            buff.flush();
+            buff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (buff != null) {
+                try {
+                    buff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     @RequestMapping(value = "compareNlp", method = RequestMethod.GET)
     public void compareNlp(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
                            @RequestParam(value = "size", required = false, defaultValue = "5") int size,

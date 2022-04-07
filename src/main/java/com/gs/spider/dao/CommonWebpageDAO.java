@@ -230,6 +230,15 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
         return warpHits2List(response.getHits());
     }
 
+    public List<Webpage> getWebpageByLevel(int level, int size, int page) {
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
+            .setQuery(QueryBuilders.matchQuery("level", level))
+            .addSort("gatherTime", SortOrder.DESC)
+            .setSize(size).setFrom(size * (page - 1));
+        SearchResponse response = searchRequestBuilder.execute().actionGet();
+        return warpHits2List(response.getHits());
+    }
+
     /**
      * 根据domain列表获取结果
      *

@@ -308,6 +308,40 @@ public class CommonWebpageService {
         return sb.toString();
     }
 
+    public String getCorpusByLevel(int level, int size, int page) {
+        int idx = 1;
+        boolean notFinished = true;
+        StringBuffer sb = new StringBuffer();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByLevel(level, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            webpages.stream().map(Webpage::getContentCleaned)
+                .forEach(para -> {
+                    sb.append(para);
+                    sb.append("\n");
+                });
+        }
+        return sb.toString();
+    }
+
+    public String getTitleByLevel(int level, int size, int page) {
+        int idx = 1;
+        boolean notFinished = true;
+        StringBuffer sb = new StringBuffer();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByLevel(level, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            webpages.stream().map(Webpage::getTitle)
+                .forEach(para -> {
+                    sb.append(para);
+                    sb.append("\n");
+                });
+        }
+        return sb.toString();
+    }
+
     public String compareNlp(String domain, int size, int page) {
 
         List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, page);
