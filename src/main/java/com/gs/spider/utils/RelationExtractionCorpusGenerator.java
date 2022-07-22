@@ -59,7 +59,7 @@ public class RelationExtractionCorpusGenerator {
         return resultList;
     }
 
-    private static List<List<String>> batchFetchNerResults(List<String> content) {
+    public static List<List<String>> batchFetchNerResults(List<String> content) {
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse httpResponse = null;
         List<List<String>> batchResults = new LinkedList<>();
@@ -70,9 +70,9 @@ public class RelationExtractionCorpusGenerator {
             // 创建httpPost远程连接实例
             HttpPost httpPost = new HttpPost("http://0.0.0.0:7765/v1/ner_all");
             // 配置请求参数实例
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(350000)// 设置连接主机服务超时时间
-                .setConnectionRequestTimeout(350000)// 设置连接请求超时时间
-                .setSocketTimeout(60000)// 设置读取数据连接超时时间
+            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(35000000)// 设置连接主机服务超时时间
+                .setConnectionRequestTimeout(35000000)// 设置连接请求超时时间
+                .setSocketTimeout(6000000)// 设置读取数据连接超时时间
                 .build();
             // 为httpPost实例设置配置
             httpPost.setConfig(requestConfig);
