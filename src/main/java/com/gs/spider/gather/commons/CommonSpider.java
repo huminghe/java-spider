@@ -230,10 +230,12 @@ public class CommonSpider extends AsyncGather implements AutoCloseable {
                     }
                 }
             }
+            /*
             //去掉startUrl页面
             if (startPage) {
                 page.setSkip(true);
             }
+            */
             page.putField("url", page.getUrl().get());
             page.putField("domain", info.getDomain());
             page.putField("spiderInfoId", info.getId());
@@ -460,11 +462,13 @@ public class CommonSpider extends AsyncGather implements AutoCloseable {
                     }
                 }
             }
+            /*
             //去掉startUrl页面
             if (startPage) {
                 page.setSkip(true);
                 return;
             }
+            */
             if (new File(path).isDirectory()) {
                 page.setSkip(true);
                 return;
