@@ -53,6 +53,7 @@ public class StaticValue {
     public static String wordVectorsPath;
     public static String ocrApi;
     public static String nerApi;
+    public static String phreseApi;
 
     static {
         LOG.debug("正在初始化StaticValue");
@@ -89,6 +90,7 @@ public class StaticValue {
             wordVectorsPath = jsonObject.get("wordVectorsPath").getAsString();
             ocrApi = jsonObject.get("ocrApi").getAsString();
             nerApi = jsonObject.get("nerApi").getAsString();
+            phreseApi = jsonObject.get("phraseApi").getAsString();
             LOG.debug("StaticValue初始化成功");
         } catch (IOException e) {
             LOG.fatal("初始化StaticValue失败," + e.getLocalizedMessage());

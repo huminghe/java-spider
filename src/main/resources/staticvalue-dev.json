@@ -20,5 +20,6 @@
   "pdfFontPath": "/data/huminghe/stategrid/msyh.ttf",
   "wordVectorsPath": "/data/huminghe/stategrid/word_vecs_tencent.txt",
   "ocrApi": "http://192.168.20.85:9998/ocr/prediction",
-  "nerApi": "http://0.0.0.0:7765/v2/ner_mix"
+  "nerApi": "http://0.0.0.0:7765/v2/ner_mix",
+  "phraseApi": "http://0.0.0.0:7765/v2/key_phrases"
 }

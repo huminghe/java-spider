@@ -125,6 +125,11 @@ public class KeywordExtractor implements NLPExtractor {
         return keywords.stream().map(KeywordResult::getWord).collect(Collectors.toList());
     }
 
+    public List<String> extractKeywordsCustom(String title, String content, int topK, double fraction) {
+        List<KeywordResult> keywords = extractKeywords(title, content, topK, fraction);
+        return keywords.stream().map(KeywordResult::getWord).collect(Collectors.toList());
+    }
+
     public List<KeywordResult> extractKeywords(String title, String content, int topK, double fraction) {
 
         List<KeywordResult> result;
