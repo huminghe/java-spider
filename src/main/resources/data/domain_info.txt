@@ -56,3 +56,4 @@ www.sasac.gov.cn	国资委网站
 www.ccps.gov.cn	中共中央党校
 www.nea.gov.cn	国家能源局
 tech.sina.com.cn	新浪网
+国际电力网	power.in-en.com
