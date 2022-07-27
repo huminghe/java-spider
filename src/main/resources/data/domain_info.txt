@@ -45,3 +45,14 @@ www.thepaper.cn	澎湃新闻
 www.sohu.com	搜狐网
 zqb.cyol.com	中国青年报
 www.cyol.com	中青在线
+cec.org.cn	中国电力企业联合会
+www.ndrc.gov.cn	发改委网站
+news.163.com	网易
+it.sohu.com	搜狐网
+tech.163.com	网易
+www.gov.cn	政府网站
+news.sina.com.cn	新浪网
+www.sasac.gov.cn	国资委网站
+www.ccps.gov.cn	中共中央党校
+www.nea.gov.cn	国家能源局
+tech.sina.com.cn	新浪网
