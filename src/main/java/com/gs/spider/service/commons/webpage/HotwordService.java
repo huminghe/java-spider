@@ -156,6 +156,96 @@ public class HotwordService {
         return words;
     }
 
+    public List<String> getHotwordsByLevelV3(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<String> titles = webpages.stream().map(Webpage::getTitle).collect(Collectors.toList());
+        List<List<String>> entities = RelationExtractionCorpusGenerator.batchFetchNerResults(titles);
+        return entities.stream().flatMap(Collection::stream)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.groupingBy(x -> x))
+            .entrySet()
+            .stream().map(x -> {
+                String word = x.getKey();
+                int cnt = x.getValue().size();
+                return new Pair<>(word, cnt);
+            })
+            .sorted((a, b) -> Integer.compare(b.getValue1(), a.getValue1()))
+            .map(Pair::getValue0)
+            .collect(Collectors.toList());
+    }
+
+    public List<String> getHotwordsByLevelV4(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<String> contents = webpages.stream().map(x -> x.getTitle() + " " + x.getContentCleaned()).collect(Collectors.toList());
+        List<List<String>> entities = RelationExtractionCorpusGenerator.batchFetchNerResults(contents);
+        return entities.stream().flatMap(Collection::stream)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.groupingBy(x -> x))
+            .entrySet()
+            .stream().map(x -> {
+                String word = x.getKey();
+                int cnt = x.getValue().size();
+                return new Pair<>(word, cnt);
+            })
+            .sorted((a, b) -> Integer.compare(b.getValue1(), a.getValue1()))
+            .map(Pair::getValue0)
+            .collect(Collectors.toList());
+    }
+
+    public List<String> getHotwordsByLevelV5(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<String> titles = webpages.stream().map(Webpage::getTitle).collect(Collectors.toList());
+        List<List<String>> phrases = titles.stream().map(x -> keyPhrasesExtractor.fetchKeyPhrases(x)).collect(Collectors.toList());
+        return phrases.stream().flatMap(Collection::stream)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.groupingBy(x -> x))
+            .entrySet()
+            .stream().map(x -> {
+                String word = x.getKey();
+                int cnt = x.getValue().size();
+                return new Pair<>(word, cnt);
+            })
+            .sorted((a, b) -> Integer.compare(b.getValue1(), a.getValue1()))
+            .map(Pair::getValue0)
+            .collect(Collectors.toList());
+    }
+
+    public List<String> getHotwordsByLevelV6(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<String> contents = webpages.stream().map(x -> x.getTitle() + " " + x.getContentCleaned()).collect(Collectors.toList());
+        List<List<String>> phrases = contents.stream().map(x -> keyPhrasesExtractor.fetchKeyPhrases(x)).collect(Collectors.toList());
+        return phrases.stream().flatMap(Collection::stream)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.groupingBy(x -> x))
+            .entrySet()
+            .stream().map(x -> {
+                String word = x.getKey();
+                int cnt = x.getValue().size();
+                return new Pair<>(word, cnt);
+            })
+            .sorted((a, b) -> Integer.compare(b.getValue1(), a.getValue1()))
+            .map(Pair::getValue0)
+            .collect(Collectors.toList());
+    }
+
+    public List<String> getHotwordsByLevelV7(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<List<String>> keywords = webpages.stream().map(x -> keywordExtractor.extractKeywordsCustom(x.getTitle(), x.getContentCleaned(), 6, 0.2))
+            .collect(Collectors.toList());
+        return keywords.stream().flatMap(Collection::stream)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.groupingBy(x -> x))
+            .entrySet()
+            .stream().map(x -> {
+                String word = x.getKey();
+                int cnt = x.getValue().size();
+                return new Pair<>(word, cnt);
+            })
+            .sorted((a, b) -> Integer.compare(b.getValue1(), a.getValue1()))
+            .map(Pair::getValue0)
+            .collect(Collectors.toList());
+    }
+
     private List<Webpage> getWebpagesByLevel(int level, int size, int page, Date startDate, Date endDate) {
         int idx = 1;
         boolean notFinished = true;

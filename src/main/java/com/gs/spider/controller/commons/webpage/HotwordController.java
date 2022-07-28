@@ -140,4 +140,59 @@ public class HotwordController {
         List<String> hotwords = hotwordService.getHotwordsByLevelV2(level, 100, page, startDate, endDate);
         return hotwords;
     }
+
+    @RequestMapping(value = "getHotwordsByLevelV3", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV3(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV3(level, 100, page, startDate, endDate);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsByLevelV4", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV4(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV4(level, 100, page, startDate, endDate);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsByLevelV5", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV5(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV5(level, 100, page, startDate, endDate);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsByLevelV6", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV6(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV6(level, 100, page, startDate, endDate);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsByLevelV7", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV7(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV7(level, 100, page, startDate, endDate);
+        return hotwords;
+    }
 }
