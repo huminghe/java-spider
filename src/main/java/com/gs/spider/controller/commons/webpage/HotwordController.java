@@ -31,17 +31,6 @@ public class HotwordController {
     private HotwordService hotwordService;
 
 
-    @RequestMapping(value = "getTitleByDomain", method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public List<String> getTitleByDomain(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
-                                         @RequestParam(value = "start", required = false, defaultValue = "100") int start,
-                                         @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
-        Date startDate = DateUtils.addDays(new Date(), -start);
-        Date endDate = DateUtils.addDays(new Date(), -end);
-        List<String> titles = hotwordService.getTitleByDomain(domain, 100, page, startDate, endDate);
-        return titles;
-    }
-
     @RequestMapping(value = "getHotwordsRaw", method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public List<Pair<String, Integer>> getHotwordsRaw(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
@@ -127,6 +116,28 @@ public class HotwordController {
         Date startDate = DateUtils.addDays(new Date(), -start);
         Date endDate = DateUtils.addDays(new Date(), -end);
         List<String> hotwords = hotwordService.getHotwordsV7(domain, 100, page, startDate, endDate);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsByLevelV1", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV1(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV1(level, 100, page, startDate, endDate);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsByLevelV2", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsByLevelV2(int level, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+                                             @RequestParam(value = "start", required = false, defaultValue = "100") int start,
+                                             @RequestParam(value = "end", required = false, defaultValue = "50") int end) {
+        Date startDate = DateUtils.addDays(new Date(), -start);
+        Date endDate = DateUtils.addDays(new Date(), -end);
+        List<String> hotwords = hotwordService.getHotwordsByLevelV2(level, 100, page, startDate, endDate);
         return hotwords;
     }
 }

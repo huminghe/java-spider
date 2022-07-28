@@ -37,85 +37,6 @@ public class HotwordService {
     @Autowired
     private KeywordExtractor keywordExtractor;
 
-    public List<String> getTitleByDomain(String domain, int size, int page, Date startDate, Date endDate) {
-        int idx = 1;
-        boolean notFinished = true;
-        List<String> titleList = new LinkedList<>();
-        while (idx <= page && notFinished) {
-            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
-            idx++;
-            notFinished = webpages.size() >= size;
-            List<String> titles = webpages.stream()
-                .filter(x -> {
-                    Date publishDate = x.getPublishTime();
-                    return publishDate != null && x.getPublishTime().compareTo(startDate) > 0 && x.getPublishTime().compareTo(endDate) <= 0;
-                })
-                .map(Webpage::getTitle)
-                .collect(Collectors.toList());
-            titleList.addAll(titles);
-        }
-        return titleList;
-    }
-
-    public List<String> getAllContentByDomain(String domain, int size, int page, Date startDate, Date endDate) {
-        int idx = 1;
-        boolean notFinished = true;
-        List<String> contentList = new LinkedList<>();
-        while (idx <= page && notFinished) {
-            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
-            idx++;
-            notFinished = webpages.size() >= size;
-            List<String> contents = webpages.stream()
-                .filter(x -> {
-                    Date publishDate = x.getPublishTime();
-                    return publishDate != null && x.getPublishTime().compareTo(startDate) > 0 && x.getPublishTime().compareTo(endDate) <= 0;
-                })
-                .map(x -> x.getTitle() + " " + x.getContentCleaned())
-                .collect(Collectors.toList());
-            contentList.addAll(contents);
-        }
-        return contentList;
-    }
-
-    public List<String> getContentByDomain(String domain, int size, int page, Date startDate, Date endDate) {
-        int idx = 1;
-        boolean notFinished = true;
-        List<String> contentList = new LinkedList<>();
-        while (idx <= page && notFinished) {
-            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
-            idx++;
-            notFinished = webpages.size() >= size;
-            List<String> contents = webpages.stream()
-                .filter(x -> {
-                    Date publishDate = x.getPublishTime();
-                    return publishDate != null && x.getPublishTime().compareTo(startDate) > 0 && x.getPublishTime().compareTo(endDate) <= 0;
-                })
-                .map(Webpage::getContentCleaned)
-                .collect(Collectors.toList());
-            contentList.addAll(contents);
-        }
-        return contentList;
-    }
-
-    public List<Webpage> getWebpagesByDomain(String domain, int size, int page, Date startDate, Date endDate) {
-        int idx = 1;
-        boolean notFinished = true;
-        List<Webpage> webpageList = new LinkedList<>();
-        while (idx <= page && notFinished) {
-            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
-            idx++;
-            notFinished = webpages.size() >= size;
-            List<Webpage> contents = webpages.stream()
-                .filter(x -> {
-                    Date publishDate = x.getPublishTime();
-                    return publishDate != null && x.getPublishTime().compareTo(startDate) > 0 && x.getPublishTime().compareTo(endDate) <= 0;
-                })
-                .collect(Collectors.toList());
-            webpageList.addAll(contents);
-        }
-        return webpageList;
-    }
-
     public List<Pair<String, Integer>> getHotwords(String domain, int size, int page, Date startDate, Date endDate) {
         List<String> titles = getTitleByDomain(domain, size, page, startDate, endDate);
         List<List<String>> entities = RelationExtractionCorpusGenerator.batchFetchNerResults(titles);
@@ -217,6 +138,75 @@ public class HotwordService {
             .map(x -> x.getValue0())
             .collect(Collectors.toList());
 
+    }
+
+    public List<String> getHotwordsByLevelV1(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<String> titles = webpages.stream().map(Webpage::getTitle).collect(Collectors.toList());
+        String titlesCombined = StringUtils.join(titles, " ");
+        List<String> words = HanLP.extractPhrase(titlesCombined, 200);
+        return words;
+    }
+
+    public List<String> getHotwordsByLevelV2(int level, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
+        List<String> contents = webpages.stream().map(x -> x.getTitle() + " " + x.getContentCleaned()).collect(Collectors.toList());
+        String contentsCombined = StringUtils.join(contents, " ");
+        List<String> words = HanLP.extractPhrase(contentsCombined, 200);
+        return words;
+    }
+
+    private List<Webpage> getWebpagesByLevel(int level, int size, int page, Date startDate, Date endDate) {
+        int idx = 1;
+        boolean notFinished = true;
+        List<Webpage> webpageList = new LinkedList<>();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByLevel(level, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            List<Webpage> contents = webpages.stream()
+                .filter(x -> {
+                    Date publishDate = x.getPublishTime();
+                    return publishDate != null && x.getPublishTime().compareTo(startDate) > 0 && x.getPublishTime().compareTo(endDate) <= 0;
+                })
+                .collect(Collectors.toList());
+            webpageList.addAll(contents);
+        }
+        return webpageList;
+    }
+
+    private List<String> getTitleByDomain(String domain, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByDomain(domain, size, page, startDate, endDate);
+        return webpages.stream().map(Webpage::getTitle).collect(Collectors.toList());
+    }
+
+    private List<String> getAllContentByDomain(String domain, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByDomain(domain, size, page, startDate, endDate);
+        return webpages.stream().map(x -> x.getTitle() + " " + x.getContentCleaned()).collect(Collectors.toList());
+    }
+
+    private List<String> getContentByDomain(String domain, int size, int page, Date startDate, Date endDate) {
+        List<Webpage> webpages = getWebpagesByDomain(domain, size, page, startDate, endDate);
+        return webpages.stream().map(Webpage::getContentCleaned).collect(Collectors.toList());
+    }
+
+    private List<Webpage> getWebpagesByDomain(String domain, int size, int page, Date startDate, Date endDate) {
+        int idx = 1;
+        boolean notFinished = true;
+        List<Webpage> webpageList = new LinkedList<>();
+        while (idx <= page && notFinished) {
+            List<Webpage> webpages = commonWebpageDAO.getWebpageByDomain(domain, size, idx);
+            idx++;
+            notFinished = webpages.size() >= size;
+            List<Webpage> contents = webpages.stream()
+                .filter(x -> {
+                    Date publishDate = x.getPublishTime();
+                    return publishDate != null && x.getPublishTime().compareTo(startDate) > 0 && x.getPublishTime().compareTo(endDate) <= 0;
+                })
+                .collect(Collectors.toList());
+            webpageList.addAll(contents);
+        }
+        return webpageList;
     }
 
 }
