@@ -57,3 +57,7 @@ www.ccps.gov.cn	中共中央党校
 www.nea.gov.cn	国家能源局
 tech.sina.com.cn	新浪网
 power.in-en.com	国际电力网
+travel.cnr.cn	央广网
+finance.sina.com.cn	新浪财经
+xw.qq.com	腾讯
+mp.pdnews.cn	人民号
