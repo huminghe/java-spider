@@ -36,6 +36,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -228,7 +229,8 @@ public class CommonWebpageController {
     @ResponseBody
     public ResultBundle<String> updateWebpageInfo(String id, String title, String contentCleaned, String url, String domain, String domainName,
                                                   String keywords, int level, String publishTime) {
-        List<String> keywordList = Arrays.asList(keywords.split(" ").clone());
+        String[] words = keywords.split(" ");
+        List<String> keywordList = new LinkedList<>(Arrays.asList(words));
         return webpageService.updateWebpage(id, title, contentCleaned, url, domain, domainName, keywordList, level, publishTime);
     }
 
