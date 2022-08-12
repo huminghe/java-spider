@@ -110,7 +110,7 @@
                    value="${webpage.level}">
         </div>
         <div class="form-group">
-            <label for="publishTime">发布日期(不填写则为现在，使用yyyy-MM-dd格式)</label>
+            <label for="publishTime">发布日期(不填写则为现在，使用yyyyMMdd格式)</label>
             <input type="text" class="form-control" id="publishTime" name="publishTime" placeholder="发布时间"
             value="<fmt:formatDate value="${webpage.publishTime}" pattern="yyyyMMdd"/>">
         </div>
