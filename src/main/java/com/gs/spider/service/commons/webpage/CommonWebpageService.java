@@ -227,7 +227,7 @@ public class CommonWebpageService {
         Webpage webpage = new Webpage();
         Date publishTime = new Date();
         if (!publishDate.isEmpty()) {
-            DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            DateFormat format = new SimpleDateFormat("yyyyMMdd");
             try {
                 publishTime = format.parse(publishDate);
             } catch (Exception e) {
@@ -253,7 +253,7 @@ public class CommonWebpageService {
         webpage.setDomainName(domainName);
         List<String> algoKeywords = keywordExtractor.extractKeywords(title, contentCleaned);
         for (String word: algoKeywords) {
-            if (!keywords.contains(word)) {
+            if (word != null && !keywords.contains(word)) {
                 keywords.add(word);
             }
         }

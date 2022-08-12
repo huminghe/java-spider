@@ -112,7 +112,7 @@
         <div class="form-group">
             <label for="publishTime">发布日期(不填写则为现在，使用yyyy-MM-dd格式)</label>
             <input type="text" class="form-control" id="publishTime" name="publishTime" placeholder="发布时间"
-            value="<fmt:formatDate value="${webpage.publishTime}" pattern="yyyy-MM-dd"/>">
+            value="<fmt:formatDate value="${webpage.publishTime}" pattern="yyyyMMdd"/>">
         </div>
         <button type="submit" class="btn btn-danger">提交</button>
     </form>
