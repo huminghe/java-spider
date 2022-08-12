@@ -1,26 +1,16 @@
 package com.gs.spider.gather.commons.puppeteer;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.ruiyun.jvppeteer.core.browser.Browser;
 import com.ruiyun.jvppeteer.core.page.Page;
-import com.ruiyun.jvppeteer.core.page.Response;
-import com.ruiyun.jvppeteer.options.Viewport;
 import com.ruiyun.jvppeteer.protocol.network.CookieParam;
-import org.apache.http.client.CookieStore;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.cookie.BasicClientCookie;
 import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.Site;
 
 import java.beans.IntrospectionException;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @Author zky

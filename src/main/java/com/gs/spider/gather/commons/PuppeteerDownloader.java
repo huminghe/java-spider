@@ -4,7 +4,6 @@ import com.gs.spider.gather.commons.puppeteer.PuppeAction;
 import com.ruiyun.jvppeteer.core.browser.Browser;
 import com.ruiyun.jvppeteer.core.page.Response;
 import com.ruiyun.jvppeteer.options.Viewport;
-import com.ruiyun.jvppeteer.protocol.webAuthn.Credentials;
 import com.gs.spider.gather.commons.puppeteer.AbstractChromiumAction;
 import com.gs.spider.gather.commons.puppeteer.ChromiumOptions;
 import com.gs.spider.gather.commons.puppeteer.PuppeteerBrowserGenerator;
