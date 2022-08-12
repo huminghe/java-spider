@@ -101,7 +101,7 @@
                    value="${webpage.domainName}">
         </div>
         <div class="form-group">
-            <label for="keywords">关键词(格式为['关键词1','关键词2'])</label>
+            <label for="keywords">关键词(使用空格分隔)</label>
             <input type="text" class="form-control" id="keywords" name="keywords" placeholder="关键词">
         </div>
         <div class="form-group">
@@ -123,6 +123,6 @@
   <c:forEach items="${webpage.keywords}" var="keyword">
   keywordList.push('${keyword}');
   </c:forEach>
-  $('#keywords').val(JSON.stringify(keywordList));
+  $('#keywords').val(keywordList.join(" "));
 </script>
 </html>

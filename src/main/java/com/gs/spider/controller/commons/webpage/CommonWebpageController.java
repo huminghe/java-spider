@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -227,7 +228,7 @@ public class CommonWebpageController {
     @ResponseBody
     public ResultBundle<String> updateWebpageInfo(String id, String title, String contentCleaned, String url, String domain, String domainName,
                                                   String keywords, int level, String publishTime) {
-        List<String> keywordList = JSON.parseObject(keywords, List.class);
+        List<String> keywordList = Arrays.asList(keywords.split(" ").clone());
         return webpageService.updateWebpage(id, title, contentCleaned, url, domain, domainName, keywordList, level, publishTime);
     }
 
