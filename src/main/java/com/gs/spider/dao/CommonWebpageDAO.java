@@ -609,7 +609,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
             resultList.add(webpage);
             return Pair.of(resultList, 1L);
         }
-        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp_store").defaultField("contentCleaned");
+        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp_store").defaultField("contentCleaned").field("contentCleaned", 0.5f).field("title", 0.5f);
         if (StringUtils.isBlank(domain)) {
             domain = "*";
         } else {
