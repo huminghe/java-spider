@@ -61,3 +61,4 @@ travel.cnr.cn	央广网
 finance.sina.com.cn	新浪财经
 xw.qq.com	腾讯
 mp.pdnews.cn	人民号
+www.chinanews.com.cn	中国新闻网
