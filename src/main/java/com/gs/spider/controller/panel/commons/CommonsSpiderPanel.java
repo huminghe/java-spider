@@ -2,11 +2,11 @@ package com.gs.spider.controller.panel.commons;
 
 import com.google.gson.Gson;
 import com.gs.spider.controller.BaseController;
+import com.gs.spider.dao.CommonWebpageDAO;
 import com.gs.spider.model.async.State;
 import com.gs.spider.model.async.Task;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
-import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.service.commons.spider.CommonsSpiderService;
@@ -49,6 +49,8 @@ public class CommonsSpiderPanel extends BaseController {
     private CommonWebpageService commonWebpageService;
     @Autowired
     private SpiderInfoService spiderInfoService;
+    @Autowired
+    private CommonWebpageDAO webpageDAO;
 
     /**
      * 已抓取的网页列表
@@ -59,13 +61,19 @@ public class CommonsSpiderPanel extends BaseController {
      * @return
      */
     @RequestMapping(value = {"list", ""}, method = RequestMethod.GET)
-    public ModelAndView list(@RequestParam(required = false) String query, @RequestParam(required = false) String domain, @RequestParam(defaultValue = "1", required = false) int page) {
+    public ModelAndView list(@RequestParam(required = false) String query, @RequestParam(required = false) String id,
+                             @RequestParam(required = false) String domain, @RequestParam(defaultValue = "1", required = false) int page) {
         ModelAndView modelAndView = new ModelAndView("panel/commons/list");
         StringBuilder sbf = new StringBuilder();
         sbf.append("&query=");
         if (StringUtils.isNotBlank(query)) {
             query = query.trim();
             sbf.append(query);
+        }
+        sbf.append("&id=");
+        if (StringUtils.isNotBlank(id)) {
+            id = id.trim();
+            sbf.append(id);
         }
         sbf.append("&domain=");
         if (StringUtils.isNotBlank(domain)) {
@@ -74,7 +82,10 @@ public class CommonsSpiderPanel extends BaseController {
         }
         page = page < 1 ? 1 : page;
         TablePage tp = null;
-        ResultBundle<Pair<List<WebpageWithHighlight>, Long>> resultBundle = commonWebpageService.getWebPageByKeywordAndDomain(query, domain, 10, page);
+        ResultBundle<Pair<List<Webpage>, Long>> resultBundle = commonWebpageService.getWebPageByKeywordDomainAndId(query, id, domain, 10, page);
+        if (!resultBundle.isSuccess()) {
+            return modelAndView;
+        }
         if (resultBundle.getResult().getRight() > 0) {
             tp = new TablePage(resultBundle.getResult().getRight(), page, 10);
             tp.checkAgain();
@@ -276,5 +287,33 @@ public class CommonsSpiderPanel extends BaseController {
     public String createQuartz(String spiderInfoId, Model model, RedirectAttributes redirectAttributes) {
         model.addAttribute("spiderInfoId", spiderInfoId);
         return "panel/commons/createQuartz";
+    }
+
+    @RequestMapping(value = "createAllQuartz", method = {RequestMethod.POST, RequestMethod.GET})
+    public String createAllQuartz() {
+        commonsSpiderService.createAllQuartz();
+        return "redirect:/panel/commons/listQuartz";
+    }
+
+    @RequestMapping(value = "editWebpageById", method = RequestMethod.GET, produces = "application/json")
+    public ModelAndView editWebpageById(String id) {
+        ModelAndView modelAndView = new ModelAndView("panel/commons/editWebpageInfo");
+        Webpage webpage = webpageDAO.getWebpageById(id);
+        webpage.setUrl(StringEscapeUtils.escapeHtml4(webpage.getUrl()));
+        modelAndView.addObject("webpage", webpage);
+        return modelAndView;
+    }
+
+    @RequestMapping(value = "editWebpageInfo", method = RequestMethod.GET, produces = "application/json")
+    public ModelAndView editWebpageInfo(String jsonWebpageInfo) {
+        ModelAndView modelAndView = new ModelAndView("panel/commons/editWebpageInfo");
+        if (StringUtils.isNotBlank(jsonWebpageInfo)) {
+            Webpage webpage = gson.fromJson(jsonWebpageInfo, Webpage.class);
+            webpage.setUrl(StringEscapeUtils.escapeHtml4(webpage.getUrl()));
+            modelAndView.addObject("webpage", webpage);
+        } else {
+            modelAndView.addObject("webpage", new Webpage());
+        }
+        return modelAndView;
     }
 }

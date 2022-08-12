@@ -7,16 +7,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.*;
 import com.gs.spider.model.async.Task;
-import com.gs.spider.model.commons.Highlight;
 import com.gs.spider.model.commons.Webpage;
-import com.gs.spider.model.commons.WebpageWithHighlight;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
@@ -26,6 +26,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -280,28 +281,6 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
         return webpageList;
     }
 
-    private WebpageWithHighlight warpHitWithHighlight(SearchHit hit, String name) {
-        WebpageWithHighlight webpage = gson.fromJson(hit.getSourceAsString(), WebpageWithHighlight.class);
-        webpage.setId(hit.getId());
-        Map<String, HighlightField> highMap = hit.getHighlightFields();
-        HighlightField high = highMap.getOrDefault(name, null);
-        if (high != null) {
-            List<String> content = Arrays.stream(high.getFragments()).map(x -> x.string()).collect(Collectors.toList());
-            webpage.setHighlights(new Highlight(content));
-        } else {
-            webpage.setHighlights(new Highlight());
-        }
-        return webpage;
-    }
-
-    private List<WebpageWithHighlight> warpHitsWithHighlight(SearchHits hits, String name) {
-        List<WebpageWithHighlight> webList = Lists.newLinkedList();
-        hits.forEach(hit -> {
-            webList.add(warpHitWithHighlight(hit, name));
-        });
-        return webList;
-    }
-
     /**
      * 搜索es库中文章
      *
@@ -372,9 +351,29 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
         updateRequest.index(INDEX_NAME);
         updateRequest.type(TYPE_NAME);
         updateRequest.id(webpage.getId());
-        updateRequest.doc(gson.toJson(webpage));
+        updateRequest.doc(gson.toJson(webpage), XContentType.JSON);
         UpdateResponse response = client.update(updateRequest).get();
         return response.getResult() == UpdateResponse.Result.UPDATED;
+    }
+
+    public String upsert(Webpage webpage) throws ExecutionException, InterruptedException {
+        DeleteRequest deleteRequest = new DeleteRequest();
+        deleteRequest.index(INDEX_NAME);
+        deleteRequest.type(TYPE_NAME);
+        deleteRequest.id(webpage.getId());
+        try {
+            client.delete(deleteRequest);
+        } catch (Exception e) {
+            logger.info("no need to delete");
+        }
+        UpdateRequest updateRequest = new UpdateRequest();
+        updateRequest.index(INDEX_NAME);
+        updateRequest.type(TYPE_NAME);
+        updateRequest.id(webpage.getId());
+        updateRequest.doc(gson.toJson(webpage), XContentType.JSON);
+        updateRequest.upsert(gson.toJson(webpage), XContentType.JSON);
+        UpdateResponse response = client.update(updateRequest).get();
+        return response.getResult().toString();
     }
 
     /**
@@ -416,7 +415,32 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
             updateRequest.index(INDEX_NAME);
             updateRequest.type(TYPE_NAME);
             updateRequest.id(webpage.getId());
-            updateRequest.doc(gson.toJson(webpage));
+            updateRequest.doc(gson.toJson(webpage), XContentType.JSON);
+            bulkRequest.add(updateRequest);
+        }
+        BulkResponse bulkResponse = bulkRequest.get();
+        return bulkResponse.hasFailures();
+    }
+
+    public boolean updateWithDel(List<Webpage> webpageList) throws ExecutionException, InterruptedException {
+        BulkRequestBuilder bulkRequest1 = client.prepareBulk();
+        for (Webpage webpage: webpageList) {
+            DeleteRequest deleteRequest = new DeleteRequest();
+            deleteRequest.index(INDEX_NAME);
+            deleteRequest.type(TYPE_NAME);
+            deleteRequest.id(webpage.getId());
+            bulkRequest1.add(deleteRequest);
+        }
+        BulkResponse bulkResponse1 = bulkRequest1.get();
+
+        BulkRequestBuilder bulkRequest = client.prepareBulk();
+        for (Webpage webpage : webpageList) {
+            UpdateRequest updateRequest = new UpdateRequest();
+            updateRequest.index(INDEX_NAME);
+            updateRequest.type(TYPE_NAME);
+            updateRequest.id(webpage.getId());
+            updateRequest.doc(gson.toJson(webpage), XContentType.JSON);
+            updateRequest.upsert(gson.toJson(webpage), XContentType.JSON);
             bulkRequest.add(updateRequest);
         }
         BulkResponse bulkResponse = bulkRequest.get();
@@ -548,7 +572,7 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
      * @param page
      * @return
      */
-    public Pair<List<WebpageWithHighlight>, Long> getWebpageByKeywordAndDomain(String query, String domain, int size, int page) {
+    public Pair<List<Webpage>, Long> getWebpageByKeywordAndDomain(String query, String domain, int size, int page) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
                 .setTypes(TYPE_NAME);
         QueryBuilder keyWorkQuery, domainQuery;
@@ -569,6 +593,55 @@ public class CommonWebpageDAO extends IDAO<Webpage> {
                 .highlighter(highlightBuilder)
                 .setSize(size).setFrom(size * (page - 1));
         SearchHits searchHits = searchRequestBuilder.get().getHits();
-        return Pair.of(warpHitsWithHighlight(searchHits, "contentCleaned"), searchHits.getTotalHits().value);
+        return Pair.of(warpHits2List(searchHits), searchHits.getTotalHits().value);
+    }
+
+    public Pair<List<Webpage>, Long> getWebpageByKeywordDomainAndId(String query, String id, String domain, int size, int page) {
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(INDEX_NAME)
+            .setTypes(TYPE_NAME);
+        QueryBuilder keyWorkQuery, domainQuery;
+        if (StringUtils.isBlank(query)) {
+            query = "*";
+        }
+        if (StringUtils.isNotBlank(id)) {
+            Webpage webpage = getWebpageById(id);
+            List<Webpage> resultList = new LinkedList<>();
+            resultList.add(webpage);
+            return Pair.of(resultList, 1L);
+        }
+        keyWorkQuery = QueryBuilders.queryStringQuery(query).analyzer("hanlp_store").defaultField("contentCleaned");
+        if (StringUtils.isBlank(domain)) {
+            domain = "*";
+        } else {
+            domain = "*" + domain + "*";
+        }
+        HighlightBuilder highlightBuilder = new HighlightBuilder().field("contentCleaned");
+        domainQuery = QueryBuilders.queryStringQuery(domain).field("domain");
+
+        searchRequestBuilder.setQuery(keyWorkQuery)
+            .setPostFilter(domainQuery)
+            .highlighter(highlightBuilder)
+            .setSize(size).setFrom(size * (page - 1));
+        SearchHits searchHits = searchRequestBuilder.get().getHits();
+        return Pair.of(warpHits2List(searchHits), searchHits.getTotalHits().value);
+    }
+
+    public boolean updateAll() {
+        int page = 1;
+        while (true) {
+            logger.info("update all, page = " + page);
+            List<Webpage> webpages = listAll(1000, page);
+            page++;
+            if (webpages.isEmpty()) {
+                break;
+            }
+            try {
+                updateWithDel(webpages);
+            } catch (Exception e) {
+                logger.error("update all error, ", e);
+            }
+        }
+        logger.info("update all done");
+        return true;
     }
 }

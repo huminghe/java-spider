@@ -1,17 +1,18 @@
 package com.gs.spider.service.commons.webpage;
 
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.gs.spider.dao.CommonWebpageDAO;
 import com.gs.spider.gather.commons.CommonSpider;
 import com.gs.spider.model.commons.SpiderInfo;
 import com.gs.spider.model.commons.Webpage;
-import com.gs.spider.model.commons.WebpageWithHighlight;
 import com.gs.spider.model.utils.ClozeResult;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultBundleBuilder;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.utils.ClozeExtractor;
 import com.gs.spider.utils.KeywordExtractor;
+import com.gs.spider.utils.Loader;
 import com.gs.spider.utils.NlpUtil;
 import com.gs.spider.utils.RelationExtractionCorpusGenerator;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +27,10 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -51,6 +55,8 @@ public class CommonWebpageService {
     private ClozeExtractor clozeExtractor;
     @Autowired
     private KeywordExtractor keywordExtractor;
+
+    private static final Map<String, String> domainNameMap = Loader.loadMapping("/data/domain_info.txt");
 
     /**
      * 根据spiderUUID返回该spider抓取到的文章
@@ -180,6 +186,10 @@ public class CommonWebpageService {
         return bundleBuilder.bundle(domain, () -> commonSpider.deleteByDomain(domain));
     }
 
+    public ResultBundle<Boolean> updateAll() {
+        return bundleBuilder.bundle(null, () -> commonWebpageDAO.updateAll());
+    }
+
     /**
      * 开始滚动数据
      *
@@ -210,6 +220,49 @@ public class CommonWebpageService {
     public ResultBundle<String> updateBySpiderInfoID(String spiderInfoIdUpdateBy, String spiderInfoJson, List<String> callbackUrls) {
         SpiderInfo spiderInfo = gson.fromJson(spiderInfoJson, SpiderInfo.class);
         return bundleBuilder.bundle(spiderInfoIdUpdateBy, () -> commonSpider.updateBySpiderinfoID(spiderInfoIdUpdateBy, spiderInfo, callbackUrls));
+    }
+
+    public ResultBundle<String> updateWebpage(String id, String title, String contentCleaned, String url, String domain, String domainName,
+                                              List<String> keywords, int level, String publishDate) {
+        Webpage webpage = new Webpage();
+        Date publishTime = new Date();
+        if (!publishDate.isEmpty()) {
+            DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            try {
+                publishTime = format.parse(publishDate);
+            } catch (Exception e) {
+                LOG.info("parse publish date error, ", e);
+            }
+        }
+        if (!id.isEmpty()) {
+            webpage = commonWebpageDAO.getWebpageById(id);
+        } else {
+            webpage.setGathertime(publishTime);
+            webpage.setContent(contentCleaned);
+            String newId = Hashing.md5().hashString(url.replaceAll("https://", "http://"), Charset.forName("utf-8")).toString();
+            webpage.setId(newId);
+        }
+        webpage.setPublishTime(publishTime);
+        webpage.setTitle(title);
+        webpage.setContentCleaned(contentCleaned);
+        webpage.setUrl(url);
+        webpage.setDomain(domain);
+        if (domainName.isEmpty()) {
+            domainName = domainNameMap.getOrDefault(domain, "其他");
+        }
+        webpage.setDomainName(domainName);
+        List<String> algoKeywords = keywordExtractor.extractKeywords(title, contentCleaned);
+        for (String word: algoKeywords) {
+            if (!keywords.contains(word)) {
+                keywords.add(word);
+            }
+        }
+        webpage.setKeywords(keywords);
+        List<String> summary = keywordExtractor.extractSummary(contentCleaned);
+        webpage.setSummary(summary);
+        webpage.setLevel(level);
+        final Webpage webpageNew = webpage;
+        return bundleBuilder.bundle(id, () -> commonWebpageDAO.upsert(webpageNew));
     }
 
     /**
@@ -264,8 +317,12 @@ public class CommonWebpageService {
      * @param page
      * @return
      */
-    public ResultBundle<Pair<List<WebpageWithHighlight>, Long>> getWebPageByKeywordAndDomain(String query, String domain, int size, int page) {
+    public ResultBundle<Pair<List<Webpage>, Long>> getWebPageByKeywordAndDomain(String query, String domain, int size, int page) {
         return bundleBuilder.bundle(query, () -> commonWebpageDAO.getWebpageByKeywordAndDomain(query, domain, size, page));
+    }
+
+    public ResultBundle<Pair<List<Webpage>, Long>> getWebPageByKeywordDomainAndId(String query, String id, String domain, int size, int page) {
+        return bundleBuilder.bundle(query, () -> commonWebpageDAO.getWebpageByKeywordDomainAndId(query, id, domain, size, page));
     }
 
     public String getNerCorpusNew(String domain, int size, int page, int numPerDoc) {

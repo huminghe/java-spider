@@ -100,6 +100,7 @@
                    aria-expanded="false">普通网页抓取</a>
                 <div class="dropdown-menu">
                     <a class="dropdown-item" href="${pageContext.request.contextPath}/panel/commons/list">搜索</a>
+                    <a class="dropdown-item" href="${pageContext.request.contextPath}/panel/commons/editWebpageInfo">增加内容</a>
                     <a class="dropdown-item" href="${pageContext.request.contextPath}/panel/commons/domainList">网站列表</a>
                     <a class="dropdown-item" href="${pageContext.request.contextPath}/panel/commons/tasks">查看进度</a>
                     <a class="dropdown-item"

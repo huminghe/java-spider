@@ -49,7 +49,7 @@
         <property name="keywordsExtractor" ref="keywordExtractor"/>
         <property name="summaryExtractor" ref="keywordExtractor"/>
         <property name="namedEntitiesExtractor" ref="HANLPExtractor"/>
-        <property name="action" ref="puppeAction"/>
+        <property name="puppeteerDownloader" ref="puppeteerDownloader"/>
         <!--普通网页爬虫数据输出管道配置-->
         <property name="pipelineList">
             <list>

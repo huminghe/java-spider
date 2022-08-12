@@ -18,6 +18,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -179,7 +180,7 @@ public class SpiderInfoDAO extends IDAO<SpiderInfo> {
     public String update(SpiderInfo spiderInfo) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(spiderInfo.getId()), "待更新爬虫模板id不可为空");
         UpdateRequest updateRequest = new UpdateRequest(INDEX_NAME, TYPE_NAME, spiderInfo.getId());
-        updateRequest.doc(gson.toJson(spiderInfo));
+        updateRequest.doc(gson.toJson(spiderInfo), XContentType.JSON);
         UpdateResponse updateResponse = null;
         try {
             updateResponse = client.update(updateRequest).get();

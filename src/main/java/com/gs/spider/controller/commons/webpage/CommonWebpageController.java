@@ -1,7 +1,11 @@
 package com.gs.spider.controller.commons.webpage;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.hash.Hashing;
+import com.google.gson.Gson;
+import com.gs.spider.dao.CommonWebpageDAO;
 import com.gs.spider.model.commons.Webpage;
 import com.gs.spider.model.utils.ClozeResult;
 import com.gs.spider.model.utils.ContentInfo;
@@ -9,6 +13,7 @@ import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.model.utils.SentencesInfo;
 import com.gs.spider.service.commons.webpage.CommonWebpageService;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -21,11 +26,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
@@ -40,8 +47,13 @@ public class CommonWebpageController {
 
     private Logger logger = LogManager.getLogger(CommonWebpageController.class);
 
+    private static final Gson gson = new Gson();
+
     @Autowired
     private CommonWebpageService webpageService;
+
+    @Autowired
+    private CommonWebpageDAO webpageDAO;
 
     /**
      * 根据spiderUUID获取结果,翻页方式获取
@@ -209,6 +221,14 @@ public class CommonWebpageController {
     public ResultBundle<String> updateBySpiderinfoID(String spiderInfoIdUpdateBy, String spiderInfoJson, String callbackUrl) {
         List<String> callbackUrls = Lists.newArrayList(callbackUrl);
         return webpageService.updateBySpiderInfoID(spiderInfoIdUpdateBy, spiderInfoJson, callbackUrls);
+    }
+
+    @RequestMapping(value = "updateWebpageInfo", method = RequestMethod.POST, produces = "application/json")
+    @ResponseBody
+    public ResultBundle<String> updateWebpageInfo(String id, String title, String contentCleaned, String url, String domain, String domainName,
+                                                  String keywords, int level, String publishTime) {
+        List<String> keywordList = JSON.parseObject(keywords, List.class);
+        return webpageService.updateWebpage(id, title, contentCleaned, url, domain, domainName, keywordList, level, publishTime);
     }
 
     /**
@@ -505,6 +525,12 @@ public class CommonWebpageController {
     public String writeRelationExtraction(String domain, @RequestParam(value = "page", required = false, defaultValue = "1") int page,
                                           @RequestParam(value = "numPerDoc", required = false, defaultValue = "5") int numPerDoc) {
         return webpageService.writeRelationExtractionCorpus(domain, 10, page, numPerDoc);
+    }
+
+    @RequestMapping(value = "updateAll", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public ResultBundle<Boolean> updateAll() {
+        return webpageService.updateAll();
     }
 
 }

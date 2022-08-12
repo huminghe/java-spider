@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 import javax.management.JMException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * CommonsSpiderService
@@ -238,6 +239,19 @@ public class CommonsSpiderService extends AsyncGatherService {
                 String.valueOf(minutesInterval) + "-" + spiderInfo.getId() + QUARTZ_TRIGGER_NAME_SUFFIX, QUARTZ_TRIGGER_GROUP_NAME
                 , WebpageSpiderJob.class, data, minutesInterval);
         return bundleBuilder.bundle(spiderInfoId, () -> "OK");
+    }
+
+    public ResultBundle<ResultBundle<String>> createAllQuartz() {
+        ResultListBundle<SpiderInfo> result = spiderInfoService.listAll(100000, 1);
+        ResultBundle<String> resultBundle = result.getResultList().stream().map(info -> {
+            String id = info.getId();
+            int level = info.getLevel();
+            int minutesInterval = level >= 1 ? 20 : 600;
+            return createQuartzJob(id, minutesInterval);
+        })
+            .reduce((a, b) -> bundleBuilder.bundle("", () -> a.getResult() + " " + b.getResult()))
+            .orElse(bundleBuilder.bundle("", () -> "null"));
+        return bundleBuilder.bundle("", () -> resultBundle);
     }
 
     public ResultBundle<Map<String, Triple<SpiderInfo, JobKey, Trigger>>> listAllQuartzJobs() {

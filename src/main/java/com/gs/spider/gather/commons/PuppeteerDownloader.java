@@ -1,5 +1,6 @@
 package com.gs.spider.gather.commons;
 
+import com.gs.spider.gather.commons.puppeteer.PuppeAction;
 import com.ruiyun.jvppeteer.core.browser.Browser;
 import com.ruiyun.jvppeteer.core.page.Response;
 import com.ruiyun.jvppeteer.options.Viewport;
@@ -10,6 +11,8 @@ import com.gs.spider.gather.commons.puppeteer.PuppeteerBrowserGenerator;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.*;
 import us.codecraft.webmagic.downloader.AbstractDownloader;
 import us.codecraft.webmagic.proxy.Proxy;
@@ -24,6 +27,7 @@ import java.util.*;
  * @Date 2020/12/25 13:19
  * puppeteer下载器（Chromium ）
  */
+@Component
 public class PuppeteerDownloader extends AbstractDownloader {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -33,38 +37,20 @@ public class PuppeteerDownloader extends AbstractDownloader {
     private ChromiumOptions chromiumOptions;
     private AbstractChromiumAction chromiumAction;
 
+    @Autowired
+    private ContentLengthLimitHttpClientDownloader contentLengthLimitHttpClientDownloader;
+
     public PuppeteerDownloader() {
-    }
+        List<SpiderListener> spiderListenerList = new ArrayList<>(1);
 
-    public PuppeteerDownloader(ChromiumOptions chromiumOptions) {
-        this.chromiumOptions = chromiumOptions;
-    }
-
-    public PuppeteerDownloader(List<SpiderListener> spiderListenerList) {
+        //下载器，配置代理
+        ChromiumOptions options = new ChromiumOptions();
+        options.setUseHeadless(true);
+        AbstractChromiumAction action = new PuppeAction();
         this.spiderListenerList = spiderListenerList;
+        this.chromiumOptions = options;
+        this.chromiumAction = action;
     }
-
-    /**
-     * 配置了远程地址，代表使用远程连接Chromium 的方式
-     */
-    public PuppeteerDownloader(List<SpiderListener> spiderListenerList, ChromiumOptions chromiumOptions) {
-        this.spiderListenerList = spiderListenerList;
-        this.chromiumOptions = chromiumOptions;
-    }
-
-    public void setChromiumOptions(ChromiumOptions chromiumOptions) {
-        this.chromiumOptions = chromiumOptions;
-    }
-
-    public void setChromiumAction(AbstractChromiumAction chromiumAction) {
-        this.chromiumAction = chromiumAction;
-    }
-
-    /*
-    public void setProxyProvider(ProxyProvider proxyProvider) {
-        this.proxyProvider = proxyProvider;
-    }
-     */
 
     @Override
     protected void onSuccess(Request request) {
@@ -115,7 +101,7 @@ public class PuppeteerDownloader extends AbstractDownloader {
                 viewport.setWidth(1920);
                 viewport.setHeight(1080);
                 chromiumPage.setViewport(viewport);
-                chromiumPage.setDefaultTimeout(task.getSite().getTimeOut());
+                chromiumPage.setDefaultTimeout(task.getSite().getTimeOut() / 2);
                 chromiumPage.coverage().startJSCoverage();
                 chromiumPage.coverage().startCSSCoverage();
                 response = chromiumPage.goTo(request.getUrl());
@@ -134,7 +120,8 @@ public class PuppeteerDownloader extends AbstractDownloader {
                 this.logger.warn("download page error {},{},{}", request.getUrl(), e, "代理为：" + currentProxy);
                 request.putExtra("exceptionMessage", e.toString().split(":")[0]);
                 this.onError(request);
-                var9 = page;
+                Page result = contentLengthLimitHttpClientDownloader.download(request, task);
+                var9 = result;
             } finally {
                 if (null != chromiumPage) {
                     try {

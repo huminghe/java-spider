@@ -2,7 +2,7 @@ package com.gs.spider.controller.commons.spiderinfo;
 
 import com.google.gson.Gson;
 import com.gs.spider.model.commons.SpiderInfo;
-import com.gs.spider.model.commons.WebpageWithHighlight;
+import com.gs.spider.model.commons.Webpage;
 import com.gs.spider.model.utils.ResultBundle;
 import com.gs.spider.model.utils.ResultListBundle;
 import com.gs.spider.service.commons.spiderinfo.SpiderInfoService;
@@ -69,7 +69,7 @@ public class SpiderInfoController {
      * @return
      */
     @RequestMapping(value = {"list", ""}, method = RequestMethod.GET)
-    public ResultBundle<Pair<List<WebpageWithHighlight>, Long>> list(@RequestParam(required = false) String query, @RequestParam(required = false) String domain, @RequestParam(defaultValue = "1", required = false) int page) {
+    public ResultBundle<Pair<List<Webpage>, Long>> list(@RequestParam(required = false) String query, @RequestParam(required = false) String domain, @RequestParam(defaultValue = "1", required = false) int page) {
         StringBuilder sbf = new StringBuilder();
         sbf.append("&query=");
         if (StringUtils.isNotBlank(query)) {
@@ -82,7 +82,7 @@ public class SpiderInfoController {
             sbf.append(domain);
         }
         page = page < 1 ? 1 : page;
-        ResultBundle<Pair<List<WebpageWithHighlight>, Long>> resultBundle = commonWebpageService.getWebPageByKeywordAndDomain(query, domain, 10, page);
+        ResultBundle<Pair<List<Webpage>, Long>> resultBundle = commonWebpageService.getWebPageByKeywordAndDomain(query, domain, 10, page);
         return resultBundle;
     }
 

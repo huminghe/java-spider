@@ -59,6 +59,11 @@
     </form>
 </div>
 <div class="container">
+    <form class="form-inline" id="startAll" action="${pageContext.request.contextPath}/panel/commons/createAllQuartz">
+        <button type="submit" class="btn btn-primary">全部创建定时任务</button>
+    </form>
+</div>
+<div class="container">
     <div class="row">
         <button type="button" onclick="startAll()">启动选中</button>
         <button type="button" onclick="checkAll()">全选</button>

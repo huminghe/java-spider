@@ -549,6 +549,7 @@ public class CommonSpider extends AsyncGather implements AutoCloseable {
     private ContentLengthLimitHttpClientDownloader contentLengthLimitHttpClientDownloader;
     private CommonWebpageDAO commonWebpageDAO;
     private SpiderInfoDAO spiderInfoDAO;
+    private PuppeteerDownloader puppeteerDownloader;
     private AbstractChromiumAction action;
 
     @Autowired
@@ -695,14 +696,6 @@ public class CommonSpider extends AsyncGather implements AutoCloseable {
             .addPipeline(resultItemsCollectorPipeline)
             .setScheduler(queueScheduler);
         if (info.isAjaxSite() && StringUtils.isNotBlank(StaticValue.ajaxDownloader)) {
-            List<SpiderListener> spiderListenerList = new ArrayList<>(1);
-
-            //下载器，配置代理
-            ChromiumOptions options = new ChromiumOptions();
-            options.setUseHeadless(true);
-
-            PuppeteerDownloader puppeteerDownloader = new PuppeteerDownloader(spiderListenerList, options);
-            puppeteerDownloader.setChromiumAction(action);
             spider.setDownloader(puppeteerDownloader);
         } else {
             spider.setDownloader(contentLengthLimitHttpClientDownloader);
@@ -879,14 +872,6 @@ public class CommonSpider extends AsyncGather implements AutoCloseable {
                 .thread(info.getThread())
                 .setUUID(task.getTaskId()));
             if (info.isAjaxSite() && StringUtils.isNotBlank(StaticValue.ajaxDownloader)) {
-                List<SpiderListener> spiderListenerList = new ArrayList<>(1);
-
-                //下载器，配置代理
-                ChromiumOptions options = new ChromiumOptions();
-                options.setUseHeadless(true);
-
-                PuppeteerDownloader puppeteerDownloader = new PuppeteerDownloader(spiderListenerList, options);
-                puppeteerDownloader.setChromiumAction(action);
                 spider.setDownloader(puppeteerDownloader);
             } else {
                 spider.setDownloader(contentLengthLimitHttpClientDownloader);
@@ -965,12 +950,12 @@ public class CommonSpider extends AsyncGather implements AutoCloseable {
         return this;
     }
 
-    public AbstractChromiumAction getAction() {
-        return action;
+    public PuppeteerDownloader getPuppeteerDownloader() {
+        return puppeteerDownloader;
     }
 
-    public CommonSpider setAction(AbstractChromiumAction action) {
-        this.action = action;
+    public CommonSpider setPuppeteerDownloader(PuppeteerDownloader puppeteerDownloader) {
+        this.puppeteerDownloader = puppeteerDownloader;
         return this;
     }
 

@@ -6,6 +6,7 @@ import com.gs.spider.utils.KeyPhrasesExtractor;
 import com.gs.spider.utils.KeywordExtractor;
 import com.gs.spider.utils.RelationExtractionCorpusGenerator;
 import com.hankcs.hanlp.HanLP;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,8 +16,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -140,6 +144,73 @@ public class HotwordService {
 
     }
 
+    public List<String> getHotwordsCompared(int level, int size, int page, int start, int days) {
+
+        Date date0 = DateUtils.addDays(new Date(), -start);
+        Date date1 = DateUtils.addDays(new Date(), -start - days);
+        Date date2 = DateUtils.addDays(new Date(), -start - 2 * days);
+
+        List<String> hotwords1 = getHotwordsByLevelV2(level, size, page, date1, date0);
+        List<String> hotwords2 = getHotwordsByLevelV2(level, size, page, date2, date1);
+
+        Map<String, Integer> hotwords1Map = generateWordsWeightMap(hotwords1, 200);
+        Map<String, Integer> hotwords2Map = generateWordsWeightMap(hotwords2, 200);
+
+        Map<String, Integer> mergedMap = mergeMap(hotwords1Map, hotwords2Map, false);
+
+        List<String> result = mergedMap.entrySet().stream()
+            .filter(x -> x.getValue() > 50)
+            .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+            .map(x -> x.getKey())
+            .collect(Collectors.toList());
+
+        return result;
+    }
+
+    public List<String> getHotwordsComparedV2(int level, int size, int page, int start, int days) {
+        Date date0 = DateUtils.addDays(new Date(), -start);
+        Date date1 = DateUtils.addDays(new Date(), -start - days);
+        Date date2 = DateUtils.addDays(new Date(), -start - 2 * days);
+
+        List<String> hotwordsPositive1 = getHotwordsByLevelV2(level, size, page, date1, date0);
+        List<String> hotwordsPositive2 = getHotwordsByLevelV3(level, size, page, date1, date0);
+        List<String> hotwordsPositive3 = getHotwordsByLevelV5(level, size, page, date1, date0);
+        List<String> hotwordsPositive4 = getHotwordsByLevelV7(level, size, page, date1, date0);
+
+        List<String> hotwordsNegative1 = getHotwordsByLevelV2(level, size, page, date2, date1);
+        List<String> hotwordsNegative2 = getHotwordsByLevelV3(level, size, page, date2, date1);
+        List<String> hotwordsNegative3 = getHotwordsByLevelV5(level, size, page, date2, date1);
+        List<String> hotwordsNegative4 = getHotwordsByLevelV7(level, size, page, date2, date1);
+
+        Map<String, Integer> hotwordsPos1Map = generateWordsWeightMap(hotwordsPositive1, 200);
+        Map<String, Integer> hotwordsPos2Map = generateWordsWeightMap(hotwordsPositive2, 70);
+        Map<String, Integer> hotwordsPos3Map = generateWordsWeightMap(hotwordsPositive3, 70);
+        Map<String, Integer> hotwordsPos4Map = generateWordsWeightMap(hotwordsPositive4, 200);
+
+        Map<String, Integer> hotwordsNeg1Map = generateWordsWeightMap(hotwordsNegative1, 200);
+        Map<String, Integer> hotwordsNeg2Map = generateWordsWeightMap(hotwordsNegative2, 70);
+        Map<String, Integer> hotwordsNeg3Map = generateWordsWeightMap(hotwordsNegative3, 70);
+        Map<String, Integer> hotwordsNeg4Map = generateWordsWeightMap(hotwordsNegative4, 200);
+
+        Map<String, Integer> mergedMap = mergeMap(hotwordsPos1Map, hotwordsPos2Map, true);
+        mergeMap(mergedMap, hotwordsPos3Map, true);
+        mergeMap(mergedMap, hotwordsPos4Map, true);
+        mergeMap(mergedMap, hotwordsNeg1Map, false);
+        mergeMap(mergedMap, hotwordsNeg2Map, false);
+        mergeMap(mergedMap, hotwordsNeg3Map, false);
+        mergeMap(mergedMap, hotwordsNeg4Map, false);
+
+        List<String> result = mergedMap.entrySet().stream()
+            .filter(x -> x.getValue() > 50)
+            .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+            .map(x -> x.getKey())
+            .collect(Collectors.toList());
+
+        return result;
+
+
+    }
+
     public List<String> getHotwordsByLevelV1(int level, int size, int page, Date startDate, Date endDate) {
         List<Webpage> webpages = getWebpagesByLevel(level, size, page, startDate, endDate);
         List<String> titles = webpages.stream().map(Webpage::getTitle).collect(Collectors.toList());
@@ -244,6 +315,31 @@ public class HotwordService {
             .sorted((a, b) -> Integer.compare(b.getValue1(), a.getValue1()))
             .map(Pair::getValue0)
             .collect(Collectors.toList());
+    }
+
+    private Map<String, Integer> generateWordsWeightMap(List<String> wordList, int max) {
+        Map<String, Integer> wordsMap = new HashMap<>();
+        int idx = 0;
+        int weight = max;
+        while (weight > 0 && idx < wordList.size()) {
+            String word = wordList.get(idx);
+            wordsMap.put(word, weight);
+            idx++;
+            weight--;
+        }
+        return wordsMap;
+    }
+
+    private Map<String, Integer> mergeMap(Map<String, Integer> map1, Map<String, Integer> map2, boolean add) {
+        Set<Map.Entry<String, Integer>> map2EntrySet = map2.entrySet();
+        for (Map.Entry<String, Integer> entry : map2EntrySet) {
+            String key = entry.getKey();
+            int value = entry.getValue();
+            int origin = map1.getOrDefault(key, 0);
+            int mergedValue = add ? origin + value : origin - value;
+            map1.put(key, mergedValue);
+        }
+        return map1;
     }
 
     private List<Webpage> getWebpagesByLevel(int level, int size, int page, Date startDate, Date endDate) {

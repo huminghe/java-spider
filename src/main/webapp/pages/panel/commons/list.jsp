@@ -56,7 +56,7 @@
                 $('#myModal').modal('show');
             });
         }
-        
+
         function clearForm(){
 			$("#query").val(null);
 			$("#domain").val(null);
@@ -83,6 +83,12 @@
 		            <input class="form-control" id="query" name="query" value="${param.query}">
 		        </div>
 	    	</div>
+			<div class="col-md-5">
+				<div class="form-group">
+					<label for="id">ID:</label>
+					<input class="form-control" id="id" name="id" value="${param.id}">
+				</div>
+			</div>
 	    	<div class="col-md-5">
 		        <div class="form-group">
 		            <label for="domain">域名:</label><span style="color: red;">(*支持模糊)</span>
@@ -120,7 +126,8 @@
 			                    <td>${webpage.domain}</td>
 			                    <td><fmt:formatDate value="${webpage.gathertime}" pattern="yyyy/MM/dd HH:mm:ss"/></td>
 			                    <td>
-			                        <button onclick="showDetail('${webpage.id}')" class="btn btn-info">Show</button>
+									<a href="${pageContext.request.contextPath}/panel/commons/editWebpageById?id=${webpage.id}"
+									   class="btn btn-info">编辑</a>
 			                    </td>
 			                    <td>
 			                        <a href="${pageContext.request.contextPath}/panel/commons/showWebpageById?id=${webpage.id}"
@@ -131,7 +138,7 @@
 			                                class="btn btn-danger"> 删除</button>
 			                    </td>
 			                </tr>
-	            		</c:forEach> 
+	            		</c:forEach>
 	            	</c:if>
 	            	<c:if test="${resultBundle eq null}">
 	            		<tr>

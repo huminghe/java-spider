@@ -9,7 +9,7 @@
     "retry": "2",
     "sleep": "500",
     "maxPageGather": "5000",
-    "timeout": "30000",
+    "timeout": "20000",
     "level": "-1",
     "urlXpath": "//div[@class=\"content\"]//a/@href",
     "contentReg": "",
