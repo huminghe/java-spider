@@ -60,6 +60,7 @@
         function clearForm(){
 			$("#query").val(null);
 			$("#domain").val(null);
+			$("#id").val(null);
 		}
     </script>
     <style type="text/css">
