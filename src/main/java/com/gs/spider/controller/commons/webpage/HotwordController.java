@@ -213,4 +213,20 @@ public class HotwordController {
         List<String> hotwords = hotwordService.getHotwordsComparedV2(level, 100, page, start, days);
         return hotwords;
     }
+
+    @RequestMapping(value = "getHotwords", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwords(int level, @RequestParam(value = "start", required = false, defaultValue = "0") int start,
+                                    @RequestParam(value = "days", required = false, defaultValue = "3") int days) {
+        List<String> hotwords = hotwordService.getHotwordsCompared(level, 10000, 1000, start, days);
+        return hotwords;
+    }
+
+    @RequestMapping(value = "getHotwordsV2", method = RequestMethod.GET, produces = "application/json")
+    @ResponseBody
+    public List<String> getHotwordsV2(int level, @RequestParam(value = "start", required = false, defaultValue = "0") int start,
+                                      @RequestParam(value = "days", required = false, defaultValue = "3") int days) {
+        List<String> hotwords = hotwordService.getHotwordsComparedV2(level, 10000, 1000, start, days);
+        return hotwords;
+    }
 }
